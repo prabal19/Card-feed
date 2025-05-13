@@ -1,103 +1,164 @@
-import Image from "next/image";
+// src/app/page.tsx
+'use client'; // Keep 'use client' for useState, useEffect, and event handlers
 
-export default function Home() {
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { AppHeader as AppHeaderComponent } from '@/components/layout/header';
+import { BlogCard } from '@/components/blog/blog-card';
+import { TrendingSidebar } from '@/components/blog/trending-sidebar';
+import { PopularCategories } from '@/components/blog/popular-categories';
+import { AskShareInput } from '@/components/blog/ask-share-input';
+import { Button } from '@/components/ui/button';
+import { categories as staticCategories } from '@/lib/data';
+import type { Post, Category } from '@/types';
+import { PlusCircle, Loader2 } from 'lucide-react';
+import { getPosts, getCategoriesWithCounts } from '@/app/actions/post.actions'; // Import server action
+
+const POSTS_PER_PAGE = 8;
+
+export default function HomePage() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [dynamicCategories, setDynamicCategories] = useState<Array<{ category: string, count: number }>>([]);
+
+  // This selectedCategory state might be used for future category filtering.
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const fetchPosts = async (page: number, loadMore = false) => {
+    if (loadMore) setIsLoadingMore(true);
+    else setIsLoading(true);
+
+    try {
+      const { posts: newPosts, hasMore } = await getPosts(page, POSTS_PER_PAGE, selectedCategory || undefined);
+      setPosts(prevPosts => loadMore ? [...prevPosts, ...newPosts] : newPosts);
+      setHasMorePosts(hasMore);
+    } catch (error) {
+      console.error("Failed to fetch posts:", error);
+      // Handle error state in UI if necessary
+    } finally {
+      if (loadMore) setIsLoadingMore(false);
+      else setIsLoading(false);
+    }
+  };
+  
+  const fetchCategoryData = async () => {
+    try {
+      const catCounts = await getCategoriesWithCounts();
+      setDynamicCategories(catCounts);
+    } catch (error) {
+      console.error("Failed to fetch category counts:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts(1);
+    fetchCategoryData();
+  }, [selectedCategory]); // Refetch when category changes
+
+  const handleLoadMore = () => {
+    if (hasMorePosts && !isLoadingMore) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchPosts(nextPage, true);
+    }
+  };
+
+  // Memoize trending posts based on likes from the fetched posts
+  const trendingPosts = useMemo(() => {
+    return [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+  }, [posts]);
+
+  const popularCategoriesData = useMemo(() => {
+    // Map dynamic category counts to the structure PopularCategories expects
+    return staticCategories.map(sc => {
+      const dynamicCat = dynamicCategories.find(dc => dc.category === sc.slug);
+      return {
+        ...sc,
+        postCount: dynamicCat ? dynamicCat.count : 0,
+      };
+    }).sort((a,b) => b.postCount - a.postCount);
+  }, [dynamicCategories, staticCategories]);
+
+
+  if (isLoading && currentPage === 1) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <AppHeaderComponent popularCategoriesData={popularCategoriesData} />
+        <main className="flex-grow container mx-auto px-4 py-8 pt-28 md:pt-8">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="flex flex-col min-h-screen bg-background">
+      <AppHeaderComponent popularCategoriesData={popularCategoriesData} />
+      <main className="flex-grow container mx-auto px-4 py-8 pt-20 md:pt-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left Sidebar: Create Post & Popular Categories (PopularCategories hidden on <lg screens, moved to drawer) */}
+          <aside className="w-full lg:w-1/4 space-y-6 order-1 lg:sticky lg:top-[calc(theme(spacing.4)_+_65px_+_env(safe-area-inset-top))] h-fit"> {/* Adjusted sticky top */}
+            <Link href="/create-post" passHref>
+              <Button className="w-full">
+                <PlusCircle className="mr-2 h-5 w-5" /> Create Post
+              </Button>
+            </Link>
+            <div className="hidden lg:block">
+              <PopularCategories categories={popularCategoriesData} />
+            </div>
+          </aside>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          {/* Middle Content: Ask/Share Input (hidden on <lg screens), Blog Feed, Load More */}
+          <section className="w-full lg:w-2/4 order-2 flex flex-col gap-6">
+            <div className="hidden lg:block">
+             <AskShareInput />
+            </div>
+            
+            {posts.length > 0 ? (
+              <div className="grid grid-cols-1 gap-6">
+                {posts.map((post: Post) => (
+                  <BlogCard key={post.id} post={post} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-semibold mb-2">No posts found</h2>
+                <p className="text-muted-foreground">
+                  Check back later for new content or try a different category!
+                </p>
+              </div>
+            )}
+
+            {hasMorePosts && (
+              <Button
+                onClick={handleLoadMore}
+                variant="outline"
+                className="mt-8 self-center text-black bg-green-300 hover:bg-green-400"
+                disabled={isLoadingMore}
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Load More Posts'
+                )}
+              </Button>
+            )}
+          </section>
+
+          {/* Right Sidebar: Trending Posts */}
+          <aside className="w-full lg:w-1/4 order-3 lg:sticky lg:top-[calc(theme(spacing.4)_+_65px_+_env(safe-area-inset-top))] h-fit"> {/* Adjusted sticky top */}
+            <TrendingSidebar trendingPosts={trendingPosts} />
+          </aside>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
