@@ -112,7 +112,7 @@ export default function ContactPage() {
                       <Mail className="h-6 w-6 text-primary mr-3 mt-1 shrink-0" />
                       <div>
                         <h3 className="font-semibold">Email Us</h3>
-                        <p className="text-muted-foreground">support@cardfeed.com</p>
+                        <p className="text-muted-foreground">contact@cardfeed.com</p>
                       </div>
                     </div>
                     <div className="flex items-start">
@@ -129,10 +129,8 @@ export default function ContactPage() {
                   <p className="text-muted-foreground">Monday - Friday: 9:00 AM - 6:00 PM</p>
                   <p className="text-muted-foreground">Saturday - Sunday: Closed</p>
                 </div>
-                 {/* Placeholder for a map */}
-                <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
-                    <p className="text-muted-foreground">(Embedded Map Placeholder)</p>
-                </div>
+
+                
               </section>
             </div>
           </CardContent>

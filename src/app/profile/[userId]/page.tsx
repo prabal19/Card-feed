@@ -309,7 +309,6 @@ export default function UserProfilePage() {
         </div>
 
       </main>
-      <AppFooter />
     </div>
   );
 }
