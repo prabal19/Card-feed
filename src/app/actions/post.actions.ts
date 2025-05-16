@@ -29,6 +29,7 @@ function mapPostToDto(post: any): Post {
     _id: post._id?.toString(),
     id: post.id?.toString() || post._id?.toString(),
     comments: Array.isArray(post.comments) ? post.comments.map(mapCommentToDto) : [],
+    date: post.date ? new Date(post.date).toISOString() : new Date().toISOString(), // Ensure date is string
   };
 }
 
@@ -58,6 +59,19 @@ export async function getPosts(page = 1, limit = 8, categorySlug?: string): Prom
     return { posts: [], hasMore: false, totalPosts: 0 };
   }
 }
+
+export async function getAllPostsForAdmin(): Promise<Post[]> {
+  try {
+    const db = await getDb();
+    const postsCollection = db.collection('posts');
+    const postsFromDb = await postsCollection.find({}).sort({ date: -1 }).toArray();
+    return postsFromDb.map(mapPostToDto);
+  } catch (error) {
+    console.error('Error fetching all posts for admin:', error);
+    return [];
+  }
+}
+
 
 export async function getPostById(postId: string): Promise<Post | null> {
   try {
@@ -118,14 +132,14 @@ export async function createPost(data: CreatePostInput): Promise<Post | null> {
       comments: [],
     };
 
-    const result = await postsCollection.insertOne(newPostData as any); // MongoDB driver expects _id to be potentially generated
+    const result = await postsCollection.insertOne(newPostData as any); 
     
     revalidatePath('/');
     revalidatePath(`/category/${data.categorySlug}`);
     revalidatePath(`/posts/${result.insertedId.toString()}`); 
-    revalidatePath(`/profile/${data.authorId}`); // Revalidate author's profile page
+    revalidatePath(`/profile/${data.authorId}`); 
+    revalidatePath('/admin/blogs'); // Revalidate admin blogs list
 
-    // Fetch the inserted document to ensure it's in the correct DTO format
     const createdPost = await postsCollection.findOne({_id: result.insertedId});
     return createdPost ? mapPostToDto(createdPost) : null;
 
@@ -183,8 +197,8 @@ export async function likePost(postId: string, userId: string): Promise<Post | n
       revalidatePath('/');
       revalidatePath(`/posts/${postId}`);
       if (updatedPost.author?.id) revalidatePath(`/profile/${updatedPost.author.id}`);
+      revalidatePath('/admin/blogs');
       
-      // Create notification if not already liked and it's not the author's own post
       if (!alreadyLiked && updatedPost.author?.id && updatedPost.author.id !== userId) {
         const likingUser = await getUserProfile(userId);
         if (likingUser) {
@@ -232,6 +246,7 @@ export async function sharePost(postId: string): Promise<Post | null> {
       revalidatePath('/');
       revalidatePath(`/posts/${postId}`);
       if (result.author?.id) revalidatePath(`/profile/${result.author.id}`);
+      revalidatePath('/admin/blogs');
       return mapPostToDto(result);
     }
     return null;
@@ -290,8 +305,8 @@ export async function addComment(commentData: AddCommentInput): Promise<Post | n
       revalidatePath('/');
       revalidatePath(`/posts/${commentData.postId}`);
       if (updatedPost.author?.id) revalidatePath(`/profile/${updatedPost.author.id}`);
+      revalidatePath('/admin/blogs');
 
-      // Create notification if it's not the author's own post
       if (updatedPost.author?.id && updatedPost.author.id !== commentData.authorId) {
          await createNotification(
             updatedPost.author.id,
@@ -345,17 +360,16 @@ export async function searchPostsByTitleOrContent(query: string): Promise<Post[]
     const db = await getDb();
     const postsCollection = db.collection('posts');
     
-    // Case-insensitive regex search
     const regex = new RegExp(query, 'i'); 
     
     const postsFromDb = await postsCollection.find({
       $or: [
         { title: { $regex: regex } },
         { content: { $regex: regex } },
-        { "author.name": { $regex: regex } }, // Also search by author name within posts
+        { "author.name": { $regex: regex } }, 
         { category: { $regex: regex } }
       ]
-    }).sort({ date: -1 }).toArray(); // Sort by date, or potentially relevance score if using text index
+    }).sort({ date: -1 }).toArray(); 
     
     return postsFromDb.map(mapPostToDto);
   } catch (error) {
@@ -547,7 +561,6 @@ export async function seedPosts(): Promise<{ success: boolean, count: number, me
       });
 
       if (result) {
-        // createPost already initializes likedBy: []
         createdCount++;
         console.log(`Created post: "${result.title}" by author ID: ${authorDetails.id}`);
       } else {
@@ -557,6 +570,7 @@ export async function seedPosts(): Promise<{ success: boolean, count: number, me
 
     if (createdCount > 0) {
       revalidatePath('/');
+      revalidatePath('/admin/blogs');
       allStaticCategories.forEach(cat => revalidatePath(`/category/${cat.slug}`));
       console.log(`Successfully created ${createdCount} posts and revalidated paths.`);
     } else if (dummyPostsData.length > 0) {

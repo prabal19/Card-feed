@@ -20,6 +20,8 @@ function mapUserToDto(userDoc: any): User {
     _id: stringId,
     id: userDoc.id || stringId, 
     password: undefined, // Ensure password is not sent to client
+    createdAt: userDoc.createdAt ? new Date(userDoc.createdAt).toISOString() : undefined,
+    updatedAt: userDoc.updatedAt ? new Date(userDoc.updatedAt).toISOString() : undefined,
   };
 }
 
@@ -31,9 +33,11 @@ let mockUsers: User[] = [
     firstName: 'Demo',
     lastName: 'User',
     email: 'demo.user@example.com',
-    // No password field in User DTO for client
     profileImageUrl: 'https://picsum.photos/seed/demoUser/200/200',
-    description: 'A passionate writer and reader on CardFeed. Loves technology and travel.',
+    description: 'A passionate writer and reader on CardFeed.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-ada',
@@ -43,6 +47,9 @@ let mockUsers: User[] = [
     email: 'ada.lovelace@example.com',
     profileImageUrl: 'https://picsum.photos/seed/adalovelace/200/200',
     description: 'Pioneering computer scientist and writer of the first algorithm. Enjoys discussing technology on CardFeed.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
    // ... other mock users from previous state, ensure they follow User DTO structure
     {
@@ -53,6 +60,9 @@ let mockUsers: User[] = [
     email: 'marco.polo@example.com',
     profileImageUrl: 'https://picsum.photos/seed/marcopolo/200/200',
     description: 'Avid explorer and storyteller, sharing tales from distant lands and travel experiences.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-julia',
@@ -62,6 +72,9 @@ let mockUsers: User[] = [
     email: 'julia.childish@example.com',
     profileImageUrl: 'https://picsum.photos/seed/juliachildish/200/200',
     description: 'Culinary enthusiast sharing recipes and food adventures on CardFeed.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-marie',
@@ -71,6 +84,9 @@ let mockUsers: User[] = [
     email: 'marie.kondoversy@example.com',
     profileImageUrl: 'https://picsum.photos/seed/mariekondoversy/200/200',
     description: 'Expert in minimalist living and decluttering, inspiring a simpler lifestyle.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-elon',
@@ -80,6 +96,9 @@ let mockUsers: User[] = [
     email: 'elon.tusk@example.com',
     profileImageUrl: 'https://picsum.photos/seed/elontusk/200/200',
     description: 'Visionary entrepreneur discussing sustainable business and future technologies.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-buddha',
@@ -89,6 +108,9 @@ let mockUsers: User[] = [
     email: 'buddha.lee@example.com',
     profileImageUrl: 'https://picsum.photos/seed/buddhalee/200/200',
     description: 'Spiritual guide sharing insights on mindfulness and health & wellness.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-satoshi',
@@ -98,6 +120,9 @@ let mockUsers: User[] = [
     email: 'satoshi.notamoto@example.com',
     profileImageUrl: 'https://picsum.photos/seed/satoshinotamoto/200/200',
     description: 'Cryptocurrency expert demystifying finance and blockchain technology.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-xavier',
@@ -107,6 +132,9 @@ let mockUsers: User[] = [
     email: 'prof.xavier@example.com',
     profileImageUrl: 'https://picsum.photos/seed/profxavier/200/200',
     description: 'Educator exploring innovative teaching methods and gamification in learning.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-banksy',
@@ -116,6 +144,9 @@ let mockUsers: User[] = [
     email: 'banksy.not@example.com',
     profileImageUrl: 'https://picsum.photos/seed/banksynot/200/200',
     description: 'Art enthusiast commenting on street art, culture, and its evolution.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-dreamwell',
@@ -125,6 +156,9 @@ let mockUsers: User[] = [
     email: 'dr.dreamwell@example.com',
     profileImageUrl: 'https://picsum.photos/seed/drdreamwell/200/200',
     description: 'Scientist specializing in sleep research and its importance for well-being.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-patty',
@@ -134,6 +168,9 @@ let mockUsers: User[] = [
     email: 'patty.planter@example.com',
     profileImageUrl: 'https://picsum.photos/seed/pattyplanter/200/200',
     description: 'Gardening guru sharing tips for urban gardening and home decor.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-henry',
@@ -143,6 +180,9 @@ let mockUsers: User[] = [
     email: 'henry.fordii@example.com',
     profileImageUrl: 'https://picsum.photos/seed/henryfordii/200/200',
     description: 'Automotive industry commentator discussing electric vehicles and future trends.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-cesar',
@@ -152,6 +192,9 @@ let mockUsers: User[] = [
     email: 'cesar.millanjr@example.com',
     profileImageUrl: 'https://picsum.photos/seed/cesarmillanjr/200/200',
     description: 'Pet behavior expert helping owners understand their canine companions.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-ninja',
@@ -161,6 +204,9 @@ let mockUsers: User[] = [
     email: 'ninja.turtle@example.com',
     profileImageUrl: 'https://picsum.photos/seed/ninjaturtle/200/200',
     description: 'eSports analyst and commentator on the impact of gaming on sports.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-pacman',
@@ -170,6 +216,9 @@ let mockUsers: User[] = [
     email: 'pac.man@example.com',
     profileImageUrl: 'https://picsum.photos/seed/pacman/200/200',
     description: 'Retro gaming aficionado exploring classic video games and their revival.',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     _id: 'author-martha',
@@ -179,7 +228,23 @@ let mockUsers: User[] = [
     email: 'martha.stewartjr@example.com',
     profileImageUrl: 'https://picsum.photos/seed/marthastewartjr/200/200',
     description: 'DIY expert sharing budget-friendly home decor and lifestyle ideas.',
-  }
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  // Add Admin User to mock users for initial seeding if ADMIN_EMAIL is set
+  ...(process.env.NEXT_PUBLIC_ADMIN_EMAIL ? [{
+    _id: 'admin-user-001',
+    id: 'admin-user-001',
+    firstName: 'Admin',
+    lastName: 'User',
+    email: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
+    profileImageUrl: 'https://picsum.photos/seed/adminuser/200/200',
+    description: 'CardFeed Administrator.',
+    role: 'admin' as 'admin',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }] : [])
 ];
 
 
@@ -189,14 +254,12 @@ export async function getUserProfile(userIdOrEmail: string): Promise<User | null
     const usersCollection = db.collection('users');
     
     let userDoc = null;
-    // Try to find by ID first (could be string _id or custom 'id' field)
     if (ObjectId.isValid(userIdOrEmail)) {
         userDoc = await usersCollection.findOne({ _id: new ObjectId(userIdOrEmail) });
     }
     if (!userDoc) {
         userDoc = await usersCollection.findOne({ id: userIdOrEmail });
     }
-    // If not found by ID, try by email
     if (!userDoc && userIdOrEmail.includes('@')) {
         userDoc = await usersCollection.findOne({ email: userIdOrEmail });
     }
@@ -205,11 +268,10 @@ export async function getUserProfile(userIdOrEmail: string): Promise<User | null
       return mapUserToDto(userDoc);
     }
     
-    // Fallback to mock array if not in DB (useful for initial demo authors)
     const mockUserFromArray = mockUsers.find(u => u.id === userIdOrEmail || u.email === userIdOrEmail);
     if (mockUserFromArray) {
         console.warn(`User ${userIdOrEmail} found in mock array, not in DB. Consider seeding.`);
-        return { ...mockUserFromArray, password: undefined }; // Ensure DTO format
+        return { ...mockUserFromArray, password: undefined }; 
     }
 
     return null;
@@ -219,12 +281,27 @@ export async function getUserProfile(userIdOrEmail: string): Promise<User | null
   }
 }
 
+export async function getAllUsers(): Promise<User[]> {
+  try {
+    const db = await getDb();
+    const usersCollection = db.collection('users');
+    const usersFromDb = await usersCollection.find({}).sort({ createdAt: -1 }).toArray();
+    return usersFromDb.map(mapUserToDto);
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    return [];
+  }
+}
+
+
 export async function updateUserProfile(userId: string, data: UpdateUserProfileInput): Promise<User | null> {
   try {
     const db = await getDb();
     const usersCollection = db.collection('users');
 
-    const updatePayload: Partial<Omit<User, 'id' | '_id' | 'email'>> = {};
+    const updatePayload: Partial<Omit<User, 'id' | '_id' | 'email' | 'createdAt'>> & { updatedAt?: Date } = {
+        updatedAt: new Date()
+    };
     if (data.firstName) updatePayload.firstName = data.firstName;
     if (data.lastName) updatePayload.lastName = data.lastName;
     if (data.description !== undefined) updatePayload.description = data.description;
@@ -241,6 +318,9 @@ export async function updateUserProfile(userId: string, data: UpdateUserProfileI
     if (result) {
       revalidatePath(`/profile/${userId}`);
       revalidatePath('/'); 
+      if (result.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        revalidatePath('/admin/users');
+      }
       return mapUserToDto(result);
     }
     return null; 
@@ -259,18 +339,11 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
 
         const existingUserByEmail = await usersCollection.findOne({ email: userData.email });
         if (existingUserByEmail) {
-            console.warn("User with this email already exists:", userData.email);
-            // For signup, this should be an error. For findOrCreate, it's fine.
-            // Throwing error here to be caught by signup form.
             throw new Error("An account with this email already exists.");
         }
         
-        // In a real app, hash password here before saving:
-        // const hashedPassword = await bcrypt.hash(userData.password, 10);
-        // For mock, we'll just omit it from DB document for User schema.
-
         const newDbId = new ObjectId(); 
-        const finalUserId = userData.id || newDbId.toString(); // Use provided ID (e.g. from mock list) or generate new one
+        const finalUserId = userData.id || newDbId.toString();
 
         const userDocumentForDb = {
             _id: newDbId, 
@@ -278,10 +351,10 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
             firstName: userData.firstName,
             lastName: userData.lastName,
             email: userData.email,
-            // Do NOT store plain password: userData.password, 
-            // Store hashedPassword instead
+            // In a real app, hash userData.password here before saving
             profileImageUrl: userData.profileImageUrl || `https://picsum.photos/seed/${finalUserId}/200/200`,
             description: userData.description || '',
+            role: userData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user',
             createdAt: new Date(),
             updatedAt: new Date(),
         };
@@ -290,6 +363,9 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
         if (insertResult.insertedId) {
              const insertedDoc = await usersCollection.findOne({ _id: insertResult.insertedId });
              if (insertedDoc) {
+                if (userDocumentForDb.role === 'admin') {
+                  revalidatePath('/admin/users');
+                }
                 return mapUserToDto(insertedDoc);
              }
         }
@@ -297,10 +373,9 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
     } catch (error) {
         console.error("Error creating user:", error);
         if (error instanceof Error && (error as any).code === 11000) { 
-            console.error("Duplicate key error, likely email or custom ID:", error.message);
             throw new Error("An account with this email or ID already exists.");
         }
-        throw error; // Re-throw for UI to handle
+        throw error; 
     }
 }
 
@@ -317,18 +392,15 @@ export async function findOrCreateUserFromGoogle({
 
     let userDoc = await usersCollection.findOne({ email: googleAuthData.email });
     
-    let profileImageUrlToSave = googleAuthData.profileImageUrl; // Start with Google's image
+    let profileImageUrlToSave = googleAuthData.profileImageUrl; 
     if (profileFormData.profileImageFile) {
-        // Simulate image upload for the new file
-        // In a real app: upload to storage, get URL
-        await new Promise(res => setTimeout(res, 500)); // Simulate network delay
+        await new Promise(res => setTimeout(res, 500)); 
         profileImageUrlToSave = `https://picsum.photos/seed/${googleAuthData.email}-${Date.now()}/200/200`;
     }
 
 
     if (userDoc) {
-      // User exists, update their profile with new details from the form
-      const updatePayload: Partial<Omit<User, 'id' | '_id' | 'email'>> & { updatedAt: Date, googleId?: string } = {
+      const updatePayload: Partial<Omit<User, 'id' | '_id' | 'email' | 'createdAt'>> & { updatedAt: Date, googleId?: string } = {
         firstName: profileFormData.firstName,
         lastName: profileFormData.lastName,
         description: profileFormData.description,
@@ -336,8 +408,12 @@ export async function findOrCreateUserFromGoogle({
         updatedAt: new Date(),
       };
       if (googleAuthData.googleId && !userDoc.googleId) {
-        updatePayload.googleId = googleAuthData.googleId; // Link Google ID if not already present
+        updatePayload.googleId = googleAuthData.googleId;
       }
+      if (!userDoc.role) { // Assign role if not present
+          updatePayload.role = googleAuthData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
+      }
+
 
       const result = await usersCollection.findOneAndUpdate(
         { _id: userDoc._id },
@@ -346,14 +422,14 @@ export async function findOrCreateUserFromGoogle({
       );
       if (result) {
         revalidatePath(`/profile/${result.id}`);
+        if (result.role === 'admin') revalidatePath('/admin/users');
         return mapUserToDto(result);
       }
       return null;
 
     } else {
-      // User does not exist, create a new one
       const newDbId = new ObjectId();
-      const finalUserId = googleAuthData.googleId || newDbId.toString(); // Prefer Google ID if available for 'id' field
+      const finalUserId = googleAuthData.googleId || newDbId.toString();
 
       const newUserDocument = {
         _id: newDbId,
@@ -364,6 +440,7 @@ export async function findOrCreateUserFromGoogle({
         lastName: profileFormData.lastName,
         description: profileFormData.description,
         profileImageUrl: profileImageUrlToSave || `https://picsum.photos/seed/${finalUserId}/200/200`,
+        role: googleAuthData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -373,6 +450,7 @@ export async function findOrCreateUserFromGoogle({
         const insertedDoc = await usersCollection.findOne({ _id: insertResult.insertedId });
         if (insertedDoc) {
             revalidatePath(`/profile/${insertedDoc.id}`);
+            if (newUserDocument.role === 'admin') revalidatePath('/admin/users');
             return mapUserToDto(insertedDoc);
         }
       }
@@ -428,38 +506,57 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
         }
 
         if (!userInDb) { 
-             // For createUser, we omit _id and id might be optional if we want it generated.
-             // Password is not part of User DTO, so we don't pass it to createUser.
              const { _id, id, password, ...restOfMockUser } = mockUser;
              const userToCreatePayload: Omit<User, '_id' | 'id'> & { id?: string, password?: string } = {
                  ...restOfMockUser,
-                 id: id, // Pass the mockUser's string id
-                 // For seeding, we might not have passwords or need them,
-                 // as createUser doesn't hash/store it directly on User object.
+                 id: id, 
+                 role: mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user',
              };
-             // If createUser requires a password for hashing (even for mocks), you'd add a dummy one here.
-             // userToCreatePayload.password = "mockPassword123"; 
              
              try {
                 const created = await createUser(userToCreatePayload);
                 if (created) {
                     createdCount++;
-                    console.log(`Seeded user: ${created.firstName} ${created.lastName} (ID: ${created.id})`);
+                    console.log(`Seeded user: ${created.firstName} ${created.lastName} (ID: ${created.id}, Role: ${created.role})`);
                 } else {
                     console.warn(`Failed to seed user via createUser: ${mockUser.firstName} ${mockUser.lastName} (ID: ${mockUser.id})`);
                 }
              } catch (e: any) {
-                // Catch errors from createUser, e.g., if email already exists due to prior failed seed
                 console.warn(`Skipping seeding user ${mockUser.email} due to error: ${e.message}`);
              }
         } else {
-            console.log(`User ${mockUser.firstName} ${mockUser.lastName} (ID: ${mockUser.id || userInDb.id}) already exists. Skipping.`);
+            // Ensure existing users have a role, default to 'user' if missing or update if admin email
+            let updateNeeded = false;
+            const updateOps: any = { $set: {} };
+            if (!userInDb.role) {
+                updateOps.$set.role = userInDb.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
+                updateNeeded = true;
+            } else if (userInDb.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && userInDb.role !== 'admin') {
+                updateOps.$set.role = 'admin';
+                updateNeeded = true;
+            }
+            if (!userInDb.createdAt) {
+                updateOps.$set.createdAt = new Date();
+                updateNeeded = true;
+            }
+             if (!userInDb.updatedAt) {
+                updateOps.$set.updatedAt = new Date();
+                updateNeeded = true;
+            }
+
+
+            if (updateNeeded) {
+                await usersCollection.updateOne({ _id: userInDb._id }, updateOps);
+                console.log(`Updated role/timestamps for existing user: ${userInDb.firstName} ${userInDb.lastName} (ID: ${userInDb.id})`);
+            } else {
+                console.log(`User ${mockUser.firstName} ${mockUser.lastName} (ID: ${mockUser.id || userInDb.id}) already exists. Skipping.`);
+            }
         }
     }
     if (createdCount > 0) {
      return { success: true, count: createdCount, message: `Seeded ${createdCount} new users.` };
     } else if (mockUsers.length > 0) {
-      return { success: true, count: 0, message: 'No new users were seeded. They may already exist or seeding was skipped.' };
+      return { success: true, count: 0, message: 'No new users were seeded. They may already exist or seeding was skipped. Existing users checked for role/timestamp updates.' };
     } else {
       return { success: true, count: 0, message: 'No mock users provided to seed.'};
     }

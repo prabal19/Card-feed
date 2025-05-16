@@ -10,11 +10,12 @@ export interface User {
   profileImageUrl?: string;
   description?: string;
   googleId?: string; // For linking Google account
+  role?: 'user' | 'admin'; // Added role
   // For social logins, store provider-specific IDs if needed
   // twitterId?: string;
   // facebookId?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: Date | string; // Allow string for consistency with other date fields if needed
+  updatedAt?: Date | string;
 }
 
 // A summary of user information, often embedded in posts or comments

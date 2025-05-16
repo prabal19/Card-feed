@@ -9,28 +9,29 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { PostSubmissionPopup } from '@/components/blog/post-submission-popup';
+import { PostSubmissionPopup } from '@/components/blog/post-submission-popup'; 
 import { categories as allCategories } from '@/lib/data'; 
 import { useToast } from '@/hooks/use-toast';
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
 import { Send, Loader2 } from 'lucide-react';
 import { createPost, type CreatePostInput } from '@/app/actions/post.actions';
 import { useAuth } from '@/contexts/auth-context';
+import { cn } from '@/lib/utils';
 
-function CreatePostContent() {
+export function CreatePostContent({ isForAdmin = false }: { isForAdmin?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { user, isLoading: authIsLoading } = useAuth();
-
   const [title, setTitle] = useState('');
-  
-  // Initialize content with the value from query parameter only on first meaningful load or if param changes.
   const initialContentFromQuery = searchParams.get('initialContent') || '';
   const [content, setContent] = useState(() => decodeURIComponent(initialContentFromQuery));
-  // Stores the last query parameter value that was used to set the content.
   const [processedInitialContentQuery, setProcessedInitialContentQuery] = useState(initialContentFromQuery);
-
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [isPostSubmissionPopupOpen, setIsPostSubmissionPopupOpen] = useState(false);
 
   useEffect(() => {
     if (!authIsLoading && !user) {
@@ -44,11 +45,6 @@ function CreatePostContent() {
   }, [user, authIsLoading, router, toast]);
 
   useEffect(() => {
-    // This effect runs if the `initialContent` query parameter changes to a new value.
-    // This allows the content to be updated if the user navigates to this page
-    // with a different `initialContent` (e.g., from another "Share" action).
-    // It avoids overwriting user's current edits if the query parameter hasn't changed
-    // from the one that initially populated the textarea.
     const newInitialContentFromQuery = searchParams.get('initialContent') || '';
     if (newInitialContentFromQuery !== processedInitialContentQuery) {
       setContent(decodeURIComponent(newInitialContentFromQuery));
@@ -56,16 +52,32 @@ function CreatePostContent() {
     }
   }, [searchParams, processedInitialContentQuery]);
 
+  const editor = useEditor({
+  extensions: [
+    StarterKit.configure({
+      heading: {
+        levels: [1],
+      },
+    }),
+    Underline,
+    Link.configure({
+      openOnClick: true,
+      autolink: true,
+      linkOnPaste: true,
+      HTMLAttributes: {
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        class: 'tiptap-link', // Optional class for styling
+      },
+    }),
+    Image,
+  ],
+  content: decodeURIComponent(initialContentFromQuery),
+  onUpdate({ editor }) {
+    setContent(editor.getHTML());
+  },
+});
 
-  const handleFormattingCommand = (command: string) => {
-    console.log(`Command: ${command}`);
-    // Basic markdown formatting (can be enhanced with cursor position awareness)
-    let selectedText = ""; // In a real editor, this would be the selected text
-    // For Textarea, we append. A proper editor would wrap selected text.
-    if (command === 'bold') setContent(prev => prev + `**${selectedText}**`);
-    if (command === 'italic') setContent(prev => prev + `*${selectedText}*`);
-    // More commands can be added here
-  };
 
   const handleSubmitClick = () => {
     if (!user) {
@@ -81,7 +93,7 @@ function CreatePostContent() {
       toast({ title: "Content Required", description: "Please enter some content for your post.", variant: "destructive" });
       return;
     }
-    setIsPopupOpen(true);
+    setIsPostSubmissionPopupOpen(true);
   };
 
   const handleFinalSubmit = async (formData: { coverImage?: File; categorySlug: string }) => {
@@ -93,9 +105,6 @@ function CreatePostContent() {
     let imageUrl = `https://picsum.photos/seed/${encodeURIComponent(title)}/600/400`;
     if (formData.coverImage) {
         console.log("Simulating upload for:", formData.coverImage.name);
-        // In a real app: actual upload logic here
-        // const uploadedUrl = await uploadImageToServer(formData.coverImage);
-        // imageUrl = uploadedUrl;
         await new Promise(resolve => setTimeout(resolve, 1000)); 
         imageUrl = `https://picsum.photos/seed/${encodeURIComponent(title)}-${Date.now()}/600/400`;
         toast({ title: "Image Uploaded (Mock)", description: "Cover image processed." });
@@ -118,9 +127,13 @@ function CreatePostContent() {
         });
         setTitle('');
         setContent('');
-        setProcessedInitialContentQuery(''); // Reset processed query state
-        setIsPopupOpen(false);
-        router.push(`/posts/${newPost.id}/${newPost.title.toLowerCase().replace(/\s+/g, '-')}`); 
+        setProcessedInitialContentQuery(''); 
+        setIsPostSubmissionPopupOpen(false);
+        if (isForAdmin) {
+          router.push(`/admin/blogs`);
+        } else {
+          router.push(`/posts/${newPost.id}/${newPost.title.toLowerCase().replace(/\s+/g, '-')}`); 
+        }
       } else {
         throw new Error("Failed to create post on server.");
       }
@@ -152,10 +165,14 @@ function CreatePostContent() {
 
   return (
     <>
-      <FormattingToolbar onCommand={handleFormattingCommand} />
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto bg-card p-6 sm:p-8 rounded-lg shadow-xl">
-          <h1 className="text-3xl font-bold mb-6 text-center text-primary">Create New Post</h1>
+      {!isForAdmin && (editor && <FormattingToolbar editor={editor} />)}
+      {isForAdmin && <div className="bg-card border-b sticky top-0 z-10"><FormattingToolbar editor={editor} /></div>}
+      
+      <main className={cn("flex-grow", !isForAdmin && "container mx-auto px-4 py-8")}>
+        <div className={cn("bg-card p-6 sm:p-8 rounded-lg shadow-xl", !isForAdmin && "max-w-3xl mx-auto")}>
+          <h1 className="text-3xl font-bold mb-6 text-center text-primary">
+            {isForAdmin ? 'Add New Blog Post (Admin)' : 'Create New Post'}
+          </h1>
           
           <div className="space-y-6">
             <div>
@@ -180,7 +197,7 @@ function CreatePostContent() {
               </label>
               <Textarea
                 id="post-content"
-                placeholder="Write your amazing content here..."
+                placeholder="Write your amazing content here... You can use HTML tags for images and links after inserting them with the toolbar buttons."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 className="min-h-[300px] text-base"
@@ -196,16 +213,16 @@ function CreatePostContent() {
       </main>
 
       <PostSubmissionPopup
-        isOpen={isPopupOpen}
-        onClose={() => setIsPopupOpen(false)}
+        isOpen={isPostSubmissionPopupOpen}
+        onClose={() => setIsPostSubmissionPopupOpen(false)}
         postTitle={title}
         categories={allCategories}
         onSubmit={handleFinalSubmit}
       />
+      
     </>
   );
 }
-
 
 export default function CreatePostPage() {
   return (
@@ -217,4 +234,3 @@ export default function CreatePostPage() {
     </div>
   );
 }
-

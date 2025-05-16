@@ -1,7 +1,7 @@
 // src/components/layout/header.tsx
 'use client';
 
-import { Newspaper, Search, Bell, LogIn, UserPlus, LogOut, User as UserIcon, Menu } from 'lucide-react';
+import { Newspaper, Search, Bell, LogIn, UserPlus, LogOut, User as UserIcon, Menu, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -23,11 +23,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useRouter, usePathname } from 'next/navigation'; // Added usePathname
+import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { PopularCategories } from '@/components/blog/popular-categories';
 import type { Category as CategoryType } from '@/types';
-import { getUnreadNotificationCount } from '@/app/actions/notification.actions'; // Import action
+import { getUnreadNotificationCount } from '@/app/actions/notification.actions';
+import { cn } from '@/lib/utils';
 
 
 interface AppHeaderProps {
@@ -35,9 +36,9 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, isAdmin } = useAuth(); // Added isAdmin
   const router = useRouter();
-  const pathname = usePathname(); // Get current path
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -54,14 +55,12 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
       };
       fetchUnreadCount();
       
-      // Poll for updates if user is on notification page
-      // Or use a more sophisticated real-time solution in a full app
-      const intervalId = setInterval(fetchUnreadCount, 30000); // Poll every 30 seconds
+      const intervalId = setInterval(fetchUnreadCount, 30000);
       return () => clearInterval(intervalId);
     } else {
-      setUnreadNotifications(0); // Reset if user logs out or is loading
+      setUnreadNotifications(0);
     }
-  }, [user, isLoading, pathname]); // Re-fetch if user changes or path changes (e.g. after marking read)
+  }, [user, isLoading, pathname]);
 
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -93,7 +92,6 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
         </div>
 
         <div className="flex items-center gap-1 md:gap-2">
-          {/* Drawer for categories on mobile */}
           <div className="lg:hidden">
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <SheetTrigger asChild>
@@ -154,6 +152,15 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
                       Profile
                     </Link>
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/dashboard">
+                        <ShieldAlert className="mr-2 h-4 w-4" />
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Log out
@@ -163,27 +170,21 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex" asChild>
-                <Link href="/login">
-                  <LogIn className="mr-2 h-4 w-4" /> Login
-                </Link>
-              </Button>
               <Button size="sm" className="hidden sm:inline-flex" asChild>
                 <Link href="/signup">
-                  <UserPlus className="mr-2 h-4 w-4" /> Sign Up
+                  <UserPlus className="mr-2 h-4 w-4" /> Sign Up / Login
                 </Link>
               </Button>
-               <Button variant="ghost" size="icon" className="rounded-full sm:hidden" asChild>
-                <Link href="/login">
-                  <LogIn className="h-5 w-5" />
-                   <span className="sr-only">Login</span>
+              <Button variant="ghost" size="icon" className="rounded-full sm:hidden" asChild>
+                <Link href="/signup">
+                  <UserPlus className="h-5 w-5" />
+                   <span className="sr-only">Sign Up or Login</span>
                 </Link>
               </Button>
             </>
           )}
         </div>
       </div>
-      {/* Search bar for mobile, below the main header items */}
       <div className="md:hidden px-4 pb-3 border-t md:border-t-0">
         <form onSubmit={handleSearchSubmit} className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />

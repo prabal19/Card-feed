@@ -116,3 +116,38 @@ body {
 .animate-heartBeat {
   animation: heartBeat 0.3s ease-in-out;
 }
+
+.tiptap p:empty::before {
+    content: none; /* Remove the small rectangle box in empty paragraphs */
+  }
+  
+  .tiptap {
+    border: 1px solid #d1d5db; /* Editor border */
+    padding: 1rem;
+    min-height: 400px; /* Set a minimum height for the editor */
+  }
+
+
+  
+  /* Optional: Styling for the placeholder when the editor is empty */
+  .tiptap:empty::before {
+    content: 'Start writing your blog here...'; 
+    color: #a1a1a1;
+    font-style: italic;
+    position: absolute;
+    top: 0.75rem;
+    left: 1rem;
+    pointer-events: none;
+  }
+  
+  .prose {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+.prose h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+}
