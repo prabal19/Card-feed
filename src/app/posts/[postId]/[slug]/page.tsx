@@ -227,7 +227,7 @@ export default function PostPage() {
               </div>
             )}
             <header className="mb-6">
-              <Badge variant="outline" className="mb-2 self-start bg-accent/10 text-black border-accent/50">{post.category}</Badge>
+              <Badge variant="outline" className="mb-2 self-start bg-accent/10 text-black border-accent/50">{post.category.charAt(0).toUpperCase() + post.category.slice(1)}</Badge>
               <h1 className="text-3xl md:text-4xl font-bold text-primary mb-3">{post.title}</h1>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Link href={authorLinkPath} className="flex items-center gap-2 hover:text-primary">

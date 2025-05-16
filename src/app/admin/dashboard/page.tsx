@@ -63,7 +63,7 @@ export default function AdminDashboardPage() {
         </Card>
       </section>
 
-      <section>
+      {/* <section>
         <Card>
           <CardHeader>
             <CardTitle>Quick Stats (Placeholder)</CardTitle>
@@ -93,7 +93,7 @@ export default function AdminDashboardPage() {
             </div>
           </CardContent>
         </Card>
-      </section>
+      </section> */}
     </div>
   );
 }

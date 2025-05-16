@@ -1,4 +1,4 @@
-import type { ObjectId } from 'mongodb';
+
 
 export interface User {
   _id?: string; // MongoDB ID, represented as string in DTOs
@@ -10,11 +10,10 @@ export interface User {
   profileImageUrl?: string;
   description?: string;
   googleId?: string; // For linking Google account
-  role?: 'user' | 'admin'; // Added role
-  // For social logins, store provider-specific IDs if needed
-  // twitterId?: string;
-  // facebookId?: string;
-  createdAt?: Date | string; // Allow string for consistency with other date fields if needed
+  authProvider?: 'google' | 'email' | 'admin_created';
+  role?: 'user' | 'admin';
+  isBlocked?: boolean; // Added for blocking users
+  createdAt?: Date | string;
   updatedAt?: Date | string;
 }
 
@@ -29,7 +28,7 @@ export interface Comment {
   _id?: string; // MongoDB ID, represented as string in DTOs
   id: string; // Unique identifier for the comment, typically string version of _id
   postId: string;
-  author: UserSummary; // Updated: Embed UserSummary
+  author: UserSummary;
   text: string;
   date: string;
 }
@@ -42,12 +41,13 @@ export type Post = {
   content: string;
   imageUrl: string;
   category: string;
-  author: UserSummary; // Updated: Embed UserSummary
+  author: UserSummary;
   date: string;
   likes: number;
-  likedBy?: string[]; // Array of User IDs who liked the post
+  likedBy?: string[];
   shares: number;
   comments: Comment[];
+  status?: 'accepted' | 'pending' | 'rejected'; // New status field
 };
 
 export type Category = {
@@ -56,7 +56,7 @@ export type Category = {
   slug: string;
 };
 
-// For profile update form
+// For profile update form (user editing their own)
 export interface UpdateUserProfileInput {
   firstName?: string;
   lastName?: string;
@@ -64,15 +64,51 @@ export interface UpdateUserProfileInput {
   profileImageUrl?: string;
 }
 
+// For admin updating any user's profile
+export interface UpdateUserByAdminInput {
+  firstName?: string;
+  lastName?: string;
+  email?: string; 
+  description?: string;
+  profileImageUrl?: string; 
+  role?: 'user' | 'admin';
+  isBlocked?: boolean;
+}
+
+
 export interface Notification {
-  _id?: string; // MongoDB ID, will be ObjectId in DB
-  id: string; // String representation of _id
-  userId: string; // The ID of the user who *receives* the notification (e.g., post author)
+  _id?: string;
+  id: string;
+  userId: string;
   type: 'like' | 'comment';
   postId: string;
-  postSlug: string; // For linking to the post
+  postSlug: string;
   postTitle: string;
-  actingUser: UserSummary; // User who triggered the notification (liked or commented)
+  actingUser: UserSummary;
   isRead: boolean;
-  createdAt: string; // ISO date string
+  createdAt: string;
+}
+
+export interface UserWithPostCount extends User {
+  postCount?: number;
+}
+
+export interface CreateUserByAdminInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string;
+  role: 'user' | 'admin';
+  description?: string;
+  profileImageUrl?: string;
+  profileImageFile?: File;
+}
+
+export interface CreatePostInput {
+  title: string;
+  content: string;
+  categorySlug: string;
+  authorId: string;
+  imageUrl?: string;
+  status?: 'accepted' | 'pending' | 'rejected'; // Added for seeding/admin creation
 }

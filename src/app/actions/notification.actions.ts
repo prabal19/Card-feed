@@ -1,3 +1,4 @@
+
 // src/app/actions/notification.actions.ts
 'use server';
 
@@ -49,11 +50,10 @@ export async function createNotification(
     };
 
     const result = await notificationsCollection.insertOne(newNotificationData as any);
-    
+
     if (result.insertedId) {
-      // Revalidate the notifications page for the target user
-      revalidatePath(`/notifications`); // General revalidation, or could target user-specific path if notifications are fetched that way
-      
+      revalidatePath(`/notifications`); // General revalidation
+
       const createdNotification = await notificationsCollection.findOne({ _id: result.insertedId });
       return createdNotification ? mapNotificationToDto(createdNotification) : null;
     }
@@ -71,7 +71,7 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
     const notifications = await notificationsCollection
       .find({ userId: userId })
       .sort({ createdAt: -1 })
-      .limit(50) // Limit to a reasonable number
+      .limit(50)
       .toArray();
     return notifications.map(mapNotificationToDto);
   } catch (error) {
@@ -102,7 +102,7 @@ export async function markNotificationAsRead(notificationId: string, userId: str
     const db = await getDb();
     const notificationsCollection = db.collection('notifications');
     const result = await notificationsCollection.updateOne(
-      { _id: new ObjectId(notificationId), userId: userId }, // Ensure user owns notification
+      { _id: new ObjectId(notificationId), userId: userId },
       { $set: { isRead: true } }
     );
     if (result.modifiedCount > 0) {
@@ -128,7 +128,7 @@ export async function markAllNotificationsAsRead(userId: string): Promise<boolea
       revalidatePath('/notifications');
       return true;
     }
-    return result.matchedCount > 0 && result.modifiedCount === 0; // All were already read
+    return result.matchedCount > 0 && result.modifiedCount === 0;
   } catch (error) {
     console.error('Error marking all notifications as read:', error);
     return false;
@@ -167,6 +167,26 @@ export async function deleteAllNotifications(userId: string): Promise<boolean> {
     return false;
   } catch (error) {
     console.error('Error deleting all notifications:', error);
+    return false;
+  }
+}
+
+export async function deleteNotificationsRelatedToUser(userIdToDelete: string): Promise<boolean> {
+  try {
+    const db = await getDb();
+    const notificationsCollection = db.collection('notifications');
+    // Delete notifications where the user is the recipient OR the actor
+    const result = await notificationsCollection.deleteMany({
+      $or: [
+        { userId: userIdToDelete },
+        { "actingUser.id": userIdToDelete }
+      ]
+    });
+    console.log(`Deleted ${result.deletedCount} notifications related to user ID ${userIdToDelete}`);
+    revalidatePath('/notifications'); // Revalidate for any user viewing their notifications
+    return result.acknowledged;
+  } catch (error) {
+    console.error(`Error deleting notifications related to user ID ${userIdToDelete}:`, error);
     return false;
   }
 }

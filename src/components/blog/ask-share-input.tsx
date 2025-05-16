@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'; // Import useRouter
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { HelpCircle, MessageSquareText, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 export function AskShareInput() {
   const [inputValue, setInputValue] = useState('');

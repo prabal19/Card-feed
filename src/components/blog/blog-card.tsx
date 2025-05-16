@@ -287,7 +287,7 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
               </div>
             </div>
           </div>
-          <Badge variant="outline" className="mb-2 self-start bg-accent/10 text-black border-accent/50">{postData.category}</Badge>
+          <Badge variant="outline" className="mb-2 self-start bg-accent/10 text-black border-accent/50">{postData.category.charAt(0).toUpperCase() + postData.category.slice(1)}</Badge>
           <CardTitle className="text-2xl font-bold leading-tight hover:text-primary transition-colors">
             <Link href={postLinkPath}>{postData.title}</Link>
           </CardTitle>

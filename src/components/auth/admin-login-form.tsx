@@ -71,7 +71,6 @@ export function AdminLoginForm({ onSubmitSuccess }: AdminLoginFormProps) {
     }
   }
 
-
   return (
  
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-12">
@@ -95,7 +94,7 @@ export function AdminLoginForm({ onSubmitSuccess }: AdminLoginFormProps) {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="admin@example.com"
+                        placeholder="Your Email"
                         {...field}
                         disabled={isSubmitting || authIsLoading}
                         autoComplete="email"
@@ -114,7 +113,7 @@ export function AdminLoginForm({ onSubmitSuccess }: AdminLoginFormProps) {
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="••••••••"
+                        placeholder="Your Password"
                         {...field}
                         disabled={isSubmitting || authIsLoading}
                         autoComplete="current-password"

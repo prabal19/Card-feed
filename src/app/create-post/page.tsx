@@ -18,7 +18,7 @@ import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import { Send, Loader2 } from 'lucide-react';
-import { createPost, type CreatePostInput } from '@/app/actions/post.actions';
+import { createPost, type CreatePostActionInput as CreatePostInput } from '@/app/actions/post.actions';
 import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
 
