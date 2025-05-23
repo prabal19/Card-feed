@@ -171,10 +171,7 @@ body {
   font-weight: 600;
   color: #444;
 }
-.prose img:hover{
-  border-style:solid;
-  border-color:green;
-}
+
 .prose h3 {
   font-size: 1.5rem;
   font-weight: 600;

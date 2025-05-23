@@ -76,7 +76,7 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
         inline: false, // Ensures the image is a block element
         allowBase64: true, // Crucial for data URIs
         HTMLAttributes: {
-          class: 'w-full  object-cover rounded-md my-4', // Styling for block-like appearance with margin
+          class: 'w-full object-cover rounded-md my-4 transition-all duration-100 hover:border-2 hover:border-green-500', // Styling for block-like appearance with margin
         },
       }),
       Placeholder.configure({
