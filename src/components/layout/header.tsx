@@ -3,7 +3,6 @@
 
 import { Newspaper, Search, Bell, LogIn, UserPlus, LogOut, User as UserIcon, Menu, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/auth-context';
@@ -28,7 +27,7 @@ import { useState, useEffect } from 'react';
 import { PopularCategories } from '@/components/blog/popular-categories';
 import type { Category as CategoryType } from '@/types';
 import { getUnreadNotificationCount } from '@/app/actions/notification.actions';
-import { cn } from '@/lib/utils';
+
 
 
 interface AppHeaderProps {
@@ -47,6 +46,11 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
     if (user && !isLoading) {
       const fetchUnreadCount = async () => {
         try {
+          if (!user?.id) {
+          // Optional: handle missing user or redirect
+          console.error("User ID is undefined");
+          return;
+          }
           const count = await getUnreadNotificationCount(user.id);
           setUnreadNotifications(count);
         } catch (error) {

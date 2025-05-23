@@ -7,7 +7,6 @@ import { AppHeader as AppHeaderComponent } from '@/components/layout/header';
 import { BlogCard } from '@/components/blog/blog-card';
 import { TrendingSidebar } from '@/components/blog/trending-sidebar';
 import { PopularCategories } from '@/components/blog/popular-categories';
-import { AskShareInput } from '@/components/blog/ask-share-input';
 import { Button } from '@/components/ui/button';
 import { categories as staticCategories } from '@/lib/data';
 import type { Post, Category } from '@/types';
@@ -115,9 +114,7 @@ export default function HomePage() {
 
           {/* Middle Content: Ask/Share Input (hidden on <lg screens), Blog Feed, Load More */}
           <section className="w-full lg:w-2/4 order-2 flex flex-col gap-6">
-            <div className="hidden lg:block">
-             <AskShareInput />
-            </div>
+            
             
             {posts.length > 0 ? (
               <div className="grid grid-cols-1 gap-6">

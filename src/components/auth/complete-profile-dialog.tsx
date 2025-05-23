@@ -1,3 +1,4 @@
+
 // src/components/auth/complete-profile-dialog.tsx
 'use client';
 
@@ -5,7 +6,7 @@ import { useState } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { GoogleAuthData, CompleteProfileFormData } from '@/contexts/auth-context';
+import type { GoogleAuthData, CompleteProfileFormData } from '@/contexts/auth-context'; // Uses updated type
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,41 +15,39 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useToast } from '@/hooks/use-toast';
 
 const completeProfileSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
   lastName: z.string().min(1, "Last name is required."),
   description: z.string().min(10, "Please tell us a bit about yourself (min 10 characters).").max(500, "Description must be 500 characters or less."),
-  profileImageFile: z.instanceof(File).optional(),
+  // profileImageFile is no longer in schema as we pass data URI directly
 });
 
-type FormValues = z.infer<typeof completeProfileSchema>;
+type FormValues = Omit<z.infer<typeof completeProfileSchema>, 'profileImageFile'>; // Schema doesn't include file
 
 interface CompleteProfileDialogProps {
   isOpen: boolean;
   onClose: () => void;
   googleAuthData: GoogleAuthData;
-  onSubmit: (formData: CompleteProfileFormData) => Promise<void>;
+  onSubmit: (formData: CompleteProfileFormData) => Promise<void>; // onSubmit expects CompleteProfileFormData
 }
 
 export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmit }: CompleteProfileDialogProps) {
-  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(googleAuthData.profileImageUrl || null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageDataUri, setImageDataUri] = useState<string>(''); // For the data URI
 
   const form = useForm<FormValues>({
     resolver: zodResolver(completeProfileSchema),
     defaultValues: {
-      firstName: googleAuthData.firstName || '',
-      lastName: googleAuthData.lastName || '',
+      firstName: '',
+      lastName: '',
       description: '',
     },
   });
@@ -56,15 +55,16 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue('profileImageFile', file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const dataUri = reader.result as string;
+        setImagePreview(dataUri);
+        setImageDataUri(dataUri); // Store the data URI
       };
       reader.readAsDataURL(file);
     } else {
-      form.setValue('profileImageFile', undefined);
-      setImagePreview(googleAuthData.profileImageUrl || null); // Revert to Google image or null if file removed
+      setImagePreview( null);
+      setImageDataUri('');
     }
   };
 
@@ -75,28 +75,25 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
         firstName: data.firstName,
         lastName: data.lastName,
         description: data.description,
-        profileImageFile: data.profileImageFile,
+        profileImageDataUri: imageDataUri, // Pass the data URI
       });
-      // onSubmit should handle closing the dialog on success
     } catch (error) {
-      // Error handling is done by the onSubmit in AuthContext which calls this
       console.error("Dialog submit error:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
   
-  // When dialog is closed externally (e.g. clicking outside, pressing Esc)
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       onClose();
-      form.reset({ // Reset form to initial Google data or empty
-        firstName: googleAuthData.firstName || '',
-        lastName: googleAuthData.lastName || '',
+      form.reset({ 
+        firstName: '',
+        lastName: '',
         description: '',
-        profileImageFile: undefined,
       });
-      setImagePreview(googleAuthData.profileImageUrl || null);
+      setImagePreview( null);
+      setImageDataUri('');
     }
   };
 
@@ -114,38 +111,36 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
             <Avatar className="h-24 w-24 mb-2">
               <AvatarImage src={imagePreview || undefined} alt="Profile preview" data-ai-hint="profile preview"/>
               <AvatarFallback className="text-3xl">
-                {googleAuthData.firstName?.charAt(0) || googleAuthData.email?.charAt(0).toUpperCase()}
-                {googleAuthData.lastName?.charAt(0)}
+                { googleAuthData.email?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <Input
-              id="profileImageFile"
+              id="profileImageFile-complete"
               type="file"
               accept="image/*"
               onChange={handleImageChange}
               className="text-sm"
               disabled={isSubmitting}
             />
-             {form.formState.errors.profileImageFile && <p className="text-destructive text-xs">{form.formState.errors.profileImageFile.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="firstName">First Name</Label>
-              <Input id="firstName" {...form.register('firstName')} disabled={isSubmitting} />
+              <Label htmlFor="firstName-complete">First Name</Label>
+              <Input id="firstName-complete" {...form.register('firstName')} disabled={isSubmitting} />
               {form.formState.errors.firstName && <p className="text-destructive text-xs mt-1">{form.formState.errors.firstName.message}</p>}
             </div>
             <div>
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input id="lastName" {...form.register('lastName')} disabled={isSubmitting} />
+              <Label htmlFor="lastName-complete">Last Name</Label>
+              <Input id="lastName-complete" {...form.register('lastName')} disabled={isSubmitting} />
               {form.formState.errors.lastName && <p className="text-destructive text-xs mt-1">{form.formState.errors.lastName.message}</p>}
             </div>
           </div>
           
           <div>
-            <Label htmlFor="description">About You</Label>
+            <Label htmlFor="description-complete">About You</Label>
             <Textarea 
-              id="description" 
+              id="description-complete" 
               placeholder="Tell us a bit about yourself..." 
               rows={3} 
               {...form.register('description')} 
@@ -155,11 +150,9 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
           </div>
 
           <DialogFooter className="pt-2">
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={isSubmitting}>
+            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => handleOpenChange(false)}>
                 Cancel
-              </Button>
-            </DialogClose>
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>

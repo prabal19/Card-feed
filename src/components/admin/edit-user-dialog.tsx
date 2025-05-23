@@ -1,3 +1,4 @@
+
 // src/components/admin/edit-user-dialog.tsx
 'use client';
 
@@ -14,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,21 +26,22 @@ import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 const editUserSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
   lastName: z.string().min(1, "Last name is required."),
   email: z.string().email("Invalid email address."),
   description: z.string().max(500, "Description must be 500 characters or less.").optional().or(z.literal('')),
-  profileImageUrl: z.string().url("Must be a valid URL (e.g., https://example.com/image.png) or empty.").optional().or(z.literal('')),
+  profileImageUrl: z.string().optional().or(z.literal('')),
   role: z.enum(['user', 'admin']),
   isBlocked: z.boolean(),
-  profileImageFile: z.any().optional(),
 });
 
 type FormValues = z.infer<typeof editUserSchema>;
 
 interface EditUserDialogProps {
-  user: User | null; // User object passed here will have _id
+  user: User | null;
   isOpen: boolean;
   onClose: () => void;
   onUserUpdated: (updatedUser: User) => void;
@@ -49,6 +51,7 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // Removed localFile state as profileImageUrl will directly hold the data URI
 
   const form = useForm<FormValues>({
     resolver: zodResolver(editUserSchema),
@@ -64,7 +67,7 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
   });
 
   useEffect(() => {
-    if (user && isOpen) { // Also check isOpen to reset only when dialog becomes visible with a new user
+    if (user && isOpen) {
       form.reset({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -73,13 +76,12 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
         profileImageUrl: user.profileImageUrl || '',
         role: user.role || 'user',
         isBlocked: user.isBlocked || false,
-        profileImageFile: undefined, 
       });
       setImagePreview(user.profileImageUrl || null);
-    } else if (!isOpen) { // Reset form if dialog is closed
+    } else if (!isOpen) {
         form.reset({
             firstName: '', lastName: '', email: '', description: '',
-            profileImageUrl: '', role: 'user', isBlocked: false, profileImageFile: undefined
+            profileImageUrl: '', role: 'user', isBlocked: false,
         });
         setImagePreview(null);
     }
@@ -89,21 +91,30 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      form.setValue('profileImageFile', files as any); 
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "Image Too Large",
+          description: `Please select an image smaller than ${MAX_FILE_SIZE / (1024 * 1024)}MB.`,
+          variant: "destructive",
+        });
+        event.target.value = ''; // Clear the input
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-        form.setValue('profileImageUrl', '', { shouldValidate: true, shouldDirty: true }); // Clear URL if file is chosen
+        const dataUri = reader.result as string;
+        setImagePreview(dataUri);
+        form.setValue('profileImageUrl', dataUri, { shouldValidate: true, shouldDirty: true });
       };
       reader.readAsDataURL(file);
     } else {
-        form.setValue('profileImageFile', undefined);
-        setImagePreview(user?.profileImageUrl || null); 
+      setImagePreview(user?.profileImageUrl || null); 
+      form.setValue('profileImageUrl', user?.profileImageUrl || '', {shouldValidate: true, shouldDirty: true });
     }
   };
 
   const handleFormSubmit: SubmitHandler<FormValues> = async (data) => {
-    if (!user || !user._id) { // Ensure user and user._id exist
+    if (!user || !user._id) {
         toast({title: "Error", description:"User data is missing for update.", variant: "destructive"});
         return;
     }
@@ -126,19 +137,12 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
         description: data.description,
         role: data.role,
         isBlocked: data.isBlocked,
+        profileImageUrl: data.profileImageUrl, 
       };
-
-      const fileList = data.profileImageFile as FileList | undefined;
-      if (fileList && fileList.length > 0 && fileList[0] instanceof File) {
-        await new Promise(res => setTimeout(res, 500)); 
-        updatePayload.profileImageUrl = `https://picsum.photos/seed/${user._id}-${Date.now()}/200/200`;
-      } else {
-        updatePayload.profileImageUrl = data.profileImageUrl || ""; 
-      }
       
       console.log("[EditUserDialog] Payload being sent to updateUserByAdmin:", updatePayload);
 
-      const updatedUser = await updateUserByAdmin(user._id, updatePayload); // Use user._id!
+      const updatedUser = await updateUserByAdmin(user._id, updatePayload);
       if (updatedUser) {
         toast({ title: "User Updated", description: `${updatedUser.firstName} ${updatedUser.lastName}'s profile has been updated.` });
         onUserUpdated(updatedUser);
@@ -155,7 +159,7 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
   };
   
   const handleDialogClose = () => {
-    onClose(); // This will trigger the useEffect to reset form if isOpen becomes false
+    onClose(); 
   };
 
   if (!user) return null;
@@ -180,19 +184,11 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
               id="profileImageFile-edit"
               type="file"
               accept="image/*"
-              {...form.register('profileImageFile')} 
               onChange={handleImageChange}
               className="text-sm"
               disabled={isSubmitting}
             />
-             <Label htmlFor="profileImageUrl-edit" className="text-sm font-medium">Or enter Image URL</Label>
-             <Input
-              id="profileImageUrl-edit"
-              placeholder="https://example.com/image.png"
-              {...form.register('profileImageUrl')}
-              disabled={isSubmitting || !!(form.watch('profileImageFile') && (form.watch('profileImageFile') as FileList)?.length > 0)}
-            />
-             {form.formState.errors.profileImageUrl && <p className="text-destructive text-xs mt-1">{form.formState.errors.profileImageUrl.message}</p>}
+            {form.formState.errors.profileImageUrl && <p className="text-destructive text-xs mt-1">{form.formState.errors.profileImageUrl.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -222,13 +218,7 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
                 <Label htmlFor="role-edit">Role</Label>
                 <Select 
                     value={form.watch('role')} 
-                   onValueChange={(value) =>
-                        form.setValue('role', value as 'user' | 'admin', {
-                            shouldValidate: true,
-                            shouldDirty: true,
-                        })
-                        }
- 
+                    onValueChange={(value) => form.setValue('role', value as 'user' | 'admin', {shouldValidate: true, shouldDirty: true})} 
                     disabled={isSubmitting}
                 >
                     <SelectTrigger id="role-edit">
@@ -241,7 +231,7 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
                 </Select>
                  {form.formState.errors.role && <p className="text-destructive text-xs mt-1">{form.formState.errors.role.message}</p>}
             </div>
-             <div className="flex flex-col space-y-2 pt-8">
+             <div className="flex flex-col space-y-2 pt-2">
                 <Label htmlFor="isBlocked-edit" className="flex items-center">
                     User Blocked
                     <Switch

@@ -1,23 +1,23 @@
 
+import type { ObjectId } from 'mongodb';
 
 export interface User {
-  _id?: string; // MongoDB ID, represented as string in DTOs
-  id: string; // Unique identifier for the user, typically string version of _id
+  _id?: string; 
+  id: string; 
   firstName: string;
   lastName: string;
   email: string;
-  password?: string; // Should not be sent to client, but useful for schema
-  profileImageUrl?: string;
+  password?: string; 
+  profileImageUrl?: string; // Can be data URI or external URL
   description?: string;
-  googleId?: string; // For linking Google account
+  googleId?: string; 
   authProvider?: 'google' | 'email' | 'admin_created';
   role?: 'user' | 'admin';
-  isBlocked?: boolean; // Added for blocking users
+  isBlocked?: boolean; 
   createdAt?: Date | string;
   updatedAt?: Date | string;
 }
 
-// A summary of user information, often embedded in posts or comments
 export interface UserSummary {
   id: string;
   name: string;
@@ -25,8 +25,8 @@ export interface UserSummary {
 }
 
 export interface Comment {
-  _id?: string; // MongoDB ID, represented as string in DTOs
-  id: string; // Unique identifier for the comment, typically string version of _id
+  _id?: string; 
+  id: string; 
   postId: string;
   author: UserSummary;
   text: string;
@@ -34,12 +34,12 @@ export interface Comment {
 }
 
 export type Post = {
-  _id?: string; // MongoDB ID, represented as string in DTOs
-  id: string; // Unique identifier for the post, typically string version of _id
+  _id?: string; 
+  id: string; 
   title: string;
   excerpt: string;
   content: string;
-  imageUrl: string;
+  imageUrl: string; // Can be data URI or external URL
   category: string;
   author: UserSummary;
   date: string;
@@ -47,7 +47,7 @@ export type Post = {
   likedBy?: string[];
   shares: number;
   comments: Comment[];
-  status?: 'accepted' | 'pending' | 'rejected'; // New status field
+  status?: 'accepted' | 'pending' | 'rejected'; 
 };
 
 export type Category = {
@@ -56,21 +56,19 @@ export type Category = {
   slug: string;
 };
 
-// For profile update form (user editing their own)
 export interface UpdateUserProfileInput {
   firstName?: string;
   lastName?: string;
   description?: string;
-  profileImageUrl?: string;
+  profileImageUrl?: string; // Can be data URI or external URL
 }
 
-// For admin updating any user's profile
 export interface UpdateUserByAdminInput {
   firstName?: string;
   lastName?: string;
   email?: string; 
   description?: string;
-  profileImageUrl?: string; 
+  profileImageUrl?: string; // Can be data URI or external URL
   role?: 'user' | 'admin';
   isBlocked?: boolean;
 }
@@ -93,6 +91,7 @@ export interface UserWithPostCount extends User {
   postCount?: number;
 }
 
+// For admin creating a user. Admin provides URL or client converts file to data URI.
 export interface CreateUserByAdminInput {
   firstName: string;
   lastName: string;
@@ -100,15 +99,15 @@ export interface CreateUserByAdminInput {
   password?: string;
   role: 'user' | 'admin';
   description?: string;
-  profileImageUrl?: string;
-  profileImageFile?: File;
+  profileImageUrl?: string; // Expecting a data URI or an external URL from client
 }
 
 export interface CreatePostInput {
   title: string;
   content: string;
+  excerpt: string; 
   categorySlug: string;
   authorId: string;
-  imageUrl?: string;
-  status?: 'accepted' | 'pending' | 'rejected'; // Added for seeding/admin creation
+  imageUrl?: string; // Can be data URI or external URL
+  status?: 'accepted' | 'pending' | 'rejected'; 
 }

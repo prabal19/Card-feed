@@ -38,16 +38,13 @@ export function AddLinkPopup({ isOpen, onClose, onSubmit }: AddLinkPopupProps) {
       });
       return;
     }
-    if (!linkText.trim()) {
-      // Default link text to URL if not provided
-      setLinkText(linkUrl); 
-    }
+    
+    const textToUse = linkText.trim() || linkUrl.trim(); // Use URL as text if linkText is empty
 
     setIsSubmitting(true);
     try {
-      // Use linkText state if it's set, otherwise default to linkUrl for the text
-      await onSubmit(linkText.trim() || linkUrl.trim(), linkUrl.trim());
-      // onSubmit in parent should call onClose and reset form if successful
+      await onSubmit(textToUse, linkUrl.trim());
+      // Parent's onSubmit should call onClose and reset form if successful
     } catch (error) {
        console.error("Error in AddLinkPopup submit:", error);
        toast({ title: "Error", description: "Could not process link information.", variant: "destructive"});
@@ -77,11 +74,11 @@ export function AddLinkPopup({ isOpen, onClose, onSubmit }: AddLinkPopupProps) {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="link-text" className="text-right col-span-1">
+            <Label htmlFor="link-text-popup" className="text-right col-span-1">
               Link Text
             </Label>
             <Input
-              id="link-text"
+              id="link-text-popup"
               value={linkText}
               onChange={(e) => setLinkText(e.target.value)}
               className="col-span-3"
@@ -90,15 +87,15 @@ export function AddLinkPopup({ isOpen, onClose, onSubmit }: AddLinkPopupProps) {
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="link-url" className="text-right col-span-1">
+            <Label htmlFor="link-url-popup" className="text-right col-span-1">
               URL
             </Label>
             <Input
-              id="link-url"
+              id="link-url-popup"
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               className="col-span-3"
-              placeholder="e.g., example.com"
+              placeholder="e.g., https://example.com"
               disabled={isSubmitting}
             />
           </div>

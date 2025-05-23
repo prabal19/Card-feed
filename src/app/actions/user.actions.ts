@@ -1,9 +1,10 @@
+
 // src/app/actions/user.actions.ts
 'use server';
 
 import clientPromise from '@/lib/mongodb';
 import type { User, UpdateUserProfileInput, CreateUserByAdminInput, UpdateUserByAdminInput } from '@/types';
-import type { GoogleAuthData, CompleteProfileFormData } from '@/contexts/auth-context';
+import type { GoogleAuthData, CompleteProfileFormData as ClientCompleteProfileFormData } from '@/contexts/auth-context'; // Renamed to avoid conflict
 import { ObjectId } from 'mongodb';
 import { revalidatePath } from 'next/cache';
 import { deletePostsByAuthorId } from './post.actions';
@@ -18,9 +19,9 @@ function mapUserToDto(userDoc: any): User {
   const stringId = userDoc._id?.toString();
   return {
     ...userDoc,
-    _id: stringId, // Ensure _id (string) is always present
-    id: userDoc.id || stringId, // Fallback for 'id' field if it's not explicitly set to _id.toString()
-    password: undefined, // Never send password to client
+    _id: stringId, 
+    id: userDoc.id || stringId, 
+    password: undefined, 
     isBlocked: userDoc.isBlocked || false, 
     createdAt: userDoc.createdAt ? new Date(userDoc.createdAt).toISOString() : undefined,
     updatedAt: userDoc.updatedAt ? new Date(userDoc.updatedAt).toISOString() : undefined,
@@ -31,7 +32,7 @@ function mapUserToDto(userDoc: any): User {
 
 let mockUsers: User[] = [
   {
-    _id: 'mock-user-123', // For consistency, ensure _id and id can be the same if it's a string representation.
+    _id: 'mock-user-123', 
     id: 'mock-user-123',
     firstName: 'Demo',
     lastName: 'User',
@@ -39,7 +40,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/demoUser/200/200',
     description: 'A passionate writer and reader on CardFeed.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -53,7 +54,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/adalovelace/200/200',
     description: 'Pioneering computer scientist and writer of the first algorithm. Enjoys discussing technology on CardFeed.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -67,7 +68,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/marcopolo/200/200',
     description: 'Avid explorer and storyteller, sharing tales from distant lands and travel experiences.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -81,7 +82,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/juliachildish/200/200',
     description: 'Culinary enthusiast sharing recipes and food adventures on CardFeed.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -95,7 +96,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/mariekondoversy/200/200',
     description: 'Expert in minimalist living and decluttering, inspiring a simpler lifestyle.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -109,7 +110,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/elontusk/200/200',
     description: 'Visionary entrepreneur discussing sustainable business and future technologies.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -123,7 +124,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/buddhalee/200/200',
     description: 'Spiritual guide sharing insights on mindfulness and health & wellness.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -137,7 +138,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/satoshinotamoto/200/200',
     description: 'Cryptocurrency expert demystifying finance and blockchain technology.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -151,7 +152,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/profxavier/200/200',
     description: 'Educator exploring innovative teaching methods and gamification in learning.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -165,7 +166,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/banksynot/200/200',
     description: 'Art enthusiast commenting on street art, culture, and its evolution.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -179,7 +180,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/drdreamwell/200/200',
     description: 'Scientist specializing in sleep research and its importance for well-being.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -193,7 +194,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/pattyplanter/200/200',
     description: 'Gardening guru sharing tips for urban gardening and home decor.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -207,7 +208,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/henryfordii/200/200',
     description: 'Automotive industry commentator discussing electric vehicles and future trends.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -221,7 +222,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/cesarmillanjr/200/200',
     description: 'Pet behavior expert helping owners understand their canine companions.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -235,7 +236,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/ninjaturtle/200/200',
     description: 'eSports analyst and commentator on the impact of gaming on sports.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -249,7 +250,7 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/pacman/200/200',
     description: 'Retro gaming aficionado exploring classic video games and their revival.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -263,14 +264,14 @@ let mockUsers: User[] = [
     profileImageUrl: 'https://picsum.photos/seed/marthastewartjr/200/200',
     description: 'DIY expert sharing budget-friendly home decor and lifestyle ideas.',
     role: 'user',
-    authProvider: 'admin_created', // Changed from 'seeded'
+    authProvider: 'admin_created', 
     isBlocked: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   ...(process.env.NEXT_PUBLIC_ADMIN_EMAIL ? [{
     _id: 'admin-user-001',
-    id: 'admin-user-001', // This id is used for initial lookup if _id is not yet an ObjectId
+    id: 'admin-user-001', 
     firstName: 'Admin',
     lastName: 'User',
     email: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
@@ -291,15 +292,12 @@ export async function getUserProfile(userIdOrEmail: string): Promise<User | null
     const usersCollection = db.collection('users');
 
     let userDoc = null;
-    // Prefer querying by actual MongoDB _id if userIdOrEmail is a valid ObjectId string
     if (ObjectId.isValid(userIdOrEmail)) {
         userDoc = await usersCollection.findOne({ _id: new ObjectId(userIdOrEmail) });
     }
-    // If not found by _id or not a valid ObjectId, try by custom 'id' field (used by mocks)
     if (!userDoc) {
         userDoc = await usersCollection.findOne({ id: userIdOrEmail });
     }
-    // If still not found, try by email
     if (!userDoc && userIdOrEmail.includes('@')) {
         userDoc = await usersCollection.findOne({ email: userIdOrEmail });
     }
@@ -308,13 +306,6 @@ export async function getUserProfile(userIdOrEmail: string): Promise<User | null
       return mapUserToDto(userDoc);
     }
     
-    // Fallback for initial seeding scenarios if mockUsers array is the source of truth for some IDs
-    const mockUserFromArray = mockUsers.find(u => u.id === userIdOrEmail || u.email === userIdOrEmail);
-    if (mockUserFromArray && (!userDoc || userDoc._id.toString() !== mockUserFromArray._id)) {
-        console.warn(`User ${userIdOrEmail} found in mock array, but potentially not matching DB _id or not in DB. This implies potential data inconsistency or user not fully seeded.`);
-        return { ...mockUserFromArray, password: undefined, isBlocked: mockUserFromArray.isBlocked || false };
-    }
-
 
     return null;
   } catch (error) {
@@ -341,11 +332,18 @@ export async function updateUserProfile(userId: string, data: UpdateUserProfileI
     const db = await getDb();
     const usersCollection = db.collection('users');
 
-    // userId here should be the actual MongoDB _id as a string
     if (!ObjectId.isValid(userId)) {
       console.error('Invalid ObjectId for updateUserProfile:', userId);
-      return null;
+      // Attempt to find user by custom `id` field if `userId` is not an ObjectId
+      const userByCustomId = await usersCollection.findOne({ id: userId });
+      if (!userByCustomId) {
+         console.error(`User not found by custom ID ${userId} either.`);
+         return null;
+      }
+      // If found by custom ID, use its actual _id for update
+      userId = userByCustomId._id.toString(); 
     }
+
 
     const updatePayload: Partial<Omit<User, 'id' | '_id' | 'email' | 'createdAt' | 'password' | 'authProvider' | 'role'>> & { updatedAt?: Date } = {
         updatedAt: new Date()
@@ -357,14 +355,14 @@ export async function updateUserProfile(userId: string, data: UpdateUserProfileI
 
 
     const result = await usersCollection.findOneAndUpdate(
-      { _id: new ObjectId(userId) }, // Query by actual _id
+      { _id: new ObjectId(userId) }, 
       { $set: updatePayload },
       { returnDocument: 'after' }
     );
 
     if (result) {
-      revalidatePath(`/profile/${userId}`); // Use the same ID for revalidation that's in the URL
-      revalidatePath('/'); // For header updates
+      revalidatePath(`/profile/${userId}`); 
+      revalidatePath('/'); 
       revalidatePath('/admin/users');
       return mapUserToDto(result);
     }
@@ -396,7 +394,7 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
                  needsUpdate = true;
             }
              if (userData.password && existingUserByEmail.password !== userData.password) {
-                updateOps.$set.password = userData.password; // Handle with care, ensure hashing in real app
+                updateOps.$set.password = userData.password; 
                 needsUpdate = true;
             }
             if (userData.isBlocked !== undefined && existingUserByEmail.isBlocked !== userData.isBlocked) {
@@ -411,16 +409,16 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
             return mapUserToDto(await usersCollection.findOne({ _id: existingUserByEmail._id }));
         }
 
-        const newMongoId = new ObjectId(); // This is the true MongoDB _id
-        const newUserIdString = newMongoId.toString(); // String version of _id for the 'id' field
+        const newMongoId = new ObjectId(); 
+        const newUserIdString = newMongoId.toString(); 
 
         const userDocumentForDb: any = {
-            _id: newMongoId, // Store as ObjectId
-            id: newUserIdString, // Store string version of _id as 'id' field
+            _id: newMongoId, 
+            id: userData.id || newUserIdString, // Use provided ID or new string _id
             firstName: userData.firstName,
             lastName: userData.lastName,
             email: userData.email,
-            profileImageUrl: userData.profileImageUrl || `https://picsum.photos/seed/${newUserIdString}/200/200`,
+            profileImageUrl: userData.profileImageUrl || `https://picsum.photos/seed/${userData.id || newUserIdString}/200/200`,
             description: userData.description || '',
             role: userData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : (userData.role || 'user'),
             authProvider: userData.authProvider || (userData.googleId ? 'google' : 'email'),
@@ -430,7 +428,7 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
             updatedAt: new Date(),
         };
         if (userData.password) {
-            userDocumentForDb.password = userData.password; // Store plain text for prototype, HASH in production
+            userDocumentForDb.password = userData.password; 
         }
 
 
@@ -447,11 +445,10 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
         return null;
     } catch (error) {
         console.error("Error creating user:", error);
-        if (error instanceof Error && (error as any).code === 11000) { // Duplicate key error
-             // Check if it's a duplicate email or duplicate id (if 'id' field has unique index)
+        if (error instanceof Error && (error as any).code === 11000) { 
             if ((error as any).message.includes('email_1')) {
                  throw new Error("An account with this email already exists.");
-            } else if ((error as any).message.includes('id_1')) { // Assuming 'id' field also has a unique index
+            } else if ((error as any).message.includes('id_1')) { 
                  throw new Error("An account with this custom ID already exists.");
             }
             throw new Error("A unique constraint was violated (e.g., email or ID already exists).");
@@ -460,12 +457,13 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
     }
 }
 
+// Updated to use ClientCompleteProfileFormData which contains profileImageDataUri
 export async function findOrCreateUserFromGoogle({
   googleAuthData,
   profileFormData,
 }: {
-  googleAuthData: GoogleAuthData;
-  profileFormData: CompleteProfileFormData;
+  googleAuthData: GoogleAuthData; // Contains original Google profileImageUrl
+  profileFormData: ClientCompleteProfileFormData; // Contains names, desc, and profileImageDataUri
 }): Promise<User | null> {
   try {
     const db = await getDb();
@@ -473,28 +471,25 @@ export async function findOrCreateUserFromGoogle({
 
     let userDoc = await usersCollection.findOne({ email: googleAuthData.email });
 
-    let profileImageUrlToSave = googleAuthData.profileImageUrl;
-    if (profileFormData.profileImageFile) {
-        await new Promise(res => setTimeout(res, 500)); // Simulate upload
-        profileImageUrlToSave = `https://picsum.photos/seed/${googleAuthData.email}-${Date.now()}/200/200`;
-    }
+    // Use the data URI from the form if provided, otherwise Google's original, otherwise placeholder
+    let profileImageUrlToSave = profileFormData.profileImageDataUri || 
+                                `https://picsum.photos/seed/${googleAuthData.email}-${Date.now()}/200/200`;
 
 
     if (userDoc) {
-      // User exists, update their profile based on form data if needed, ensure authProvider is google
       const updatePayload: Partial<Omit<User, 'id' | '_id' | 'email' | 'createdAt'>> & { updatedAt: Date, googleId?: string, authProvider?: User['authProvider'] } = {
-        firstName: profileFormData.firstName || userDoc.firstName, // Use new if provided, else existing
+        firstName: profileFormData.firstName || userDoc.firstName,
         lastName: profileFormData.lastName || userDoc.lastName,
-        description: profileFormData.description || userDoc.description, // Use new if provided
-        profileImageUrl: profileImageUrlToSave || userDoc.profileImageUrl || `https://picsum.photos/seed/${userDoc.id}/200/200`,
-        authProvider: 'google', // Ensure it's marked as google auth
+        description: profileFormData.description || userDoc.description,
+        profileImageUrl: profileImageUrlToSave,
+        authProvider: 'google',
         isBlocked: userDoc.isBlocked || false, 
         updatedAt: new Date(),
       };
       if (googleAuthData.googleId && !userDoc.googleId) {
         updatePayload.googleId = googleAuthData.googleId;
       }
-       if (!userDoc.role) { // Set role if not already set (e.g., for users created before roles)
+       if (!userDoc.role) {
           updatePayload.role = googleAuthData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
       }
 
@@ -512,19 +507,18 @@ export async function findOrCreateUserFromGoogle({
       return null;
 
     } else {
-      // User does not exist, create new user
       const newMongoId = new ObjectId();
       const newUserIdString = newMongoId.toString();
 
       const newUserDocument = {
-        _id: newMongoId, // ObjectId
-        id: newUserIdString, // String version of _id
+        _id: newMongoId,
+        id: newUserIdString, 
         googleId: googleAuthData.googleId,
         email: googleAuthData.email,
         firstName: profileFormData.firstName,
         lastName: profileFormData.lastName,
         description: profileFormData.description,
-        profileImageUrl: profileImageUrlToSave || `https://picsum.photos/seed/${newUserIdString}/200/200`,
+        profileImageUrl: profileImageUrlToSave,
         role: googleAuthData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user',
         authProvider: 'google' as 'google',
         isBlocked: false, 
@@ -587,28 +581,21 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
 
   try {
     for (const mockUser of mockUsers) {
-        // Try to find by email first as it should be unique
         let userInDb = await usersCollection.findOne({ email: mockUser.email });
         
-        // If not found by email, and mockUser._id looks like a placeholder ID, try finding by that 'id' field
         if (!userInDb && mockUser.id && !ObjectId.isValid(mockUser.id)) {
             userInDb = await usersCollection.findOne({ id: mockUser.id });
         }
 
 
         if (!userInDb) {
-             // User doesn't exist, create them
-             const { _id, id, password, ...restOfMockUser } = mockUser;
+             const { _id, password, ...restOfMockUser } = mockUser; // Exclude _id, password
              
-             // For createUser, we don't pass _id. 'id' will be generated from new ObjectId if not provided in restOfMockUser.id
-             // However, our mockUsers have specific 'id' strings. Let's ensure createUser handles this.
-             // createUser will generate a new MongoDB _id, and use mockUser.id for the string 'id' field.
-
              const userToCreatePayload: Omit<User, '_id' | 'id'> & { id?: string, password?: string } = {
                  ...restOfMockUser, // This includes firstName, lastName, email, etc.
-                 id: mockUser.id, // Pass the mockUser.id to be stored in the 'id' field.
+                 id: mockUser.id, 
                  role: mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : (mockUser.role || 'user'),
-                 authProvider: mockUser.authProvider || 'admin_created', // Default to admin_created if not specified
+                 authProvider: mockUser.authProvider || 'admin_created', 
                  isBlocked: mockUser.isBlocked || false,
              };
              if (mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
@@ -627,49 +614,48 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
                 console.warn(`Skipping seeding user ${mockUser.email} due to error: ${e.message}`);
              }
         } else {
-            // User exists, check if updates are needed
             let updateNeeded = false;
             const updateOps: any = { $set: {} };
 
-            // Ensure role is correct, especially for admin
             const expectedRole = mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : (mockUser.role || 'user');
             if (userInDb.role !== expectedRole) {
                 updateOps.$set.role = expectedRole;
                 updateNeeded = true;
             }
 
-            // Ensure authProvider is correct
             const expectedAuthProvider = mockUser.authProvider || (userInDb.googleId ? 'google' : (expectedRole === 'admin' ? 'email' : 'admin_created'));
             if (userInDb.authProvider !== expectedAuthProvider) {
                 updateOps.$set.authProvider = expectedAuthProvider;
                 updateNeeded = true;
             }
-            // Ensure isBlocked is initialized
             if (userInDb.isBlocked === undefined) { 
-                updateOps.$set.isBlocked = false;
+                updateOps.$set.isBlocked = mockUser.isBlocked || false;
+                updateNeeded = true;
+            } else if (userInDb.isBlocked !== (mockUser.isBlocked || false)) {
+                updateOps.$set.isBlocked = mockUser.isBlocked || false;
                 updateNeeded = true;
             }
-            // Ensure admin password is set if it's the admin user and password is in .env
             if (userInDb.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && process.env.ADMIN_PASSWORD && userInDb.password !== process.env.ADMIN_PASSWORD) {
-                updateOps.$set.password = process.env.ADMIN_PASSWORD; // HASH in production
+                updateOps.$set.password = process.env.ADMIN_PASSWORD; 
                 updateNeeded = true;
             }
-            // Ensure timestamps exist
             if (!userInDb.createdAt) {
-                updateOps.$set.createdAt = new Date();
+                updateOps.$set.createdAt = mockUser.createdAt || new Date();
                 updateNeeded = true;
             }
-            if (!userInDb.updatedAt) {
-                updateOps.$set.updatedAt = new Date(); // Or use existing if only other fields changed
-            } else {
-                 updateOps.$set.updatedAt = new Date(); // Always update updatedAt if other changes are made
+            if (!userInDb.updatedAt || updateNeeded) {
+                updateOps.$set.updatedAt = new Date(); 
+                updateNeeded = true; // ensure updatedAt is set if other changes made
             }
-            // Ensure the string 'id' field matches the mockUser.id if it was used for lookup,
-            // or that it matches _id.toString() if it was created fresh.
-            // This is crucial if 'id' field has a unique index.
-            // For simplicity, we'll rely on createUser to set 'id' correctly on creation.
-            // If userInDb.id doesn't match mockUser.id (and mockUser.id was the intended unique key), it's tricky.
-            // This seed script assumes email is the primary key for matching existing mock users.
+            // Ensure mockUser's own id is preserved if that's the key, otherwise it should be _id.toString()
+            if (userInDb.id !== mockUser.id && !ObjectId.isValid(mockUser.id)) {
+                 updateOps.$set.id = mockUser.id;
+                 updateNeeded = true;
+            } else if (userInDb.id !== userInDb._id.toString() && ObjectId.isValid(mockUser.id) && mockUser.id === userInDb._id.toString()){
+                // if mockUser.id IS an ObjectId string, ensure userInDb.id matches it
+                 updateOps.$set.id = userInDb._id.toString();
+                 updateNeeded = true;
+            }
 
 
             if (updateNeeded) {
@@ -706,13 +692,8 @@ export async function createUserByAdmin(userData: CreateUserByAdminInput): Promi
     const newMongoId = new ObjectId();
     const newUserIdString = newMongoId.toString();
 
-    let profileImageUrl = userData.profileImageUrl;
-    if(userData.profileImageFile){ // This field comes from client, not used directly in DB model
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate upload
-        profileImageUrl = `https://picsum.photos/seed/${newUserIdString}-${Date.now()}/200/200`;
-    } else if (!profileImageUrl) {
-        profileImageUrl = `https://picsum.photos/seed/${newUserIdString}/200/200`;
-    }
+    // profileImageUrl is now expected to be a data URI or null
+    const profileImageUrlToSave = userData.profileImageUrl || `https://picsum.photos/seed/${newUserIdString}/200/200`;
 
     const userDocumentForDb: Omit<User, '_id' | 'id'> & { _id: ObjectId, id: string, password?: string } = {
       _id: newMongoId,
@@ -720,17 +701,16 @@ export async function createUserByAdmin(userData: CreateUserByAdminInput): Promi
       firstName: userData.firstName,
       lastName: userData.lastName,
       email: userData.email,
-      profileImageUrl: profileImageUrl,
+      profileImageUrl: profileImageUrlToSave,
       description: userData.description || '',
       role: userData.role,
-      authProvider: 'admin_created', // Explicitly set
+      authProvider: 'admin_created', 
       isBlocked: false, 
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     if (userData.password) {
-      // SECURITY RISK: Storing password directly. In production, hash this password.
       userDocumentForDb.password = userData.password;
     }
 
@@ -746,7 +726,7 @@ export async function createUserByAdmin(userData: CreateUserByAdminInput): Promi
   } catch (error) {
     console.error("Error creating user by admin:", error);
     if (error instanceof Error) {
-        if ((error as any).code === 11000) { // Duplicate key
+        if ((error as any).code === 11000) { 
             throw new Error("An account with this email or ID already exists.");
         }
         throw error;
@@ -760,7 +740,6 @@ export async function updateUserByAdmin(userId: string, data: UpdateUserByAdminI
     const db = await getDb();
     const usersCollection = db.collection('users');
 
-    // userId MUST be the string representation of the MongoDB _id
     if (!ObjectId.isValid(userId)) {
       console.error('Invalid ObjectId for updateUserByAdmin:', userId);
       return null;
@@ -773,29 +752,28 @@ export async function updateUserByAdmin(userId: string, data: UpdateUserByAdminI
 
     if (data.firstName !== undefined) updatePayload.firstName = data.firstName;
     if (data.lastName !== undefined) updatePayload.lastName = data.lastName;
-    if (data.email !== undefined) updatePayload.email = data.email; // Admin can change email
+    if (data.email !== undefined) updatePayload.email = data.email; 
     if (data.description !== undefined) updatePayload.description = data.description;
     
-    if (data.profileImageUrl !== undefined) { // Can be an empty string to clear it
+    // profileImageUrl can be a data URI or an external URL
+    if (data.profileImageUrl !== undefined) { 
         updatePayload.profileImageUrl = data.profileImageUrl;
     }
     
     if (data.role !== undefined) updatePayload.role = data.role;
     if (data.isBlocked !== undefined) updatePayload.isBlocked = data.isBlocked;
-    // `authProvider` should not be changed by admin here; it's set on creation or by Google Sync.
+    
 
-    // Check if there's anything to update other than updatedAt
     const fieldsToUpdate = Object.keys(updatePayload).filter(key => key !== 'updatedAt');
-    if (fieldsToUpdate.length === 0) {
+    if (fieldsToUpdate.length === 0 && !Object.prototype.hasOwnProperty.call(data, 'profileImageUrl')) { // Also check if profileImageUrl was explicitly passed even if empty
       console.log("[updateUserByAdmin] No changed fields provided for update. Fetching current user.");
       const currentUserDoc = await usersCollection.findOne({ _id: new ObjectId(userId) });
       return currentUserDoc ? mapUserToDto(currentUserDoc) : null;
     }
     
-    console.log("[updateUserByAdmin] Update payload for MongoDB:", JSON.stringify(updatePayload, null, 2));
 
     const result = await usersCollection.findOneAndUpdate(
-      { _id: new ObjectId(userId) }, // Query by the actual MongoDB _id
+      { _id: new ObjectId(userId) }, 
       { $set: updatePayload },
       { returnDocument: 'after' }
     );
@@ -805,7 +783,7 @@ export async function updateUserByAdmin(userId: string, data: UpdateUserByAdminI
     if (result) {
       revalidatePath('/admin/users');
       const mappedUser = mapUserToDto(result);
-      revalidatePath(`/profile/${mappedUser.id}`); // Revalidate by user.id (which is _id.toString())
+      revalidatePath(`/profile/${mappedUser.id}`); 
       return mappedUser;
     }
     console.warn(`[updateUserByAdmin] User with _id ${userId} not found or not updated.`);
@@ -819,7 +797,7 @@ export async function updateUserByAdmin(userId: string, data: UpdateUserByAdminI
   }
 }
 
-export async function deleteUserByAdmin(userId: string): Promise<boolean> { // userId is _id string
+export async function deleteUserByAdmin(userId: string): Promise<boolean> { 
   try {
     const db = await getDb();
     const usersCollection = db.collection('users');
@@ -842,17 +820,12 @@ export async function deleteUserByAdmin(userId: string): Promise<boolean> { // u
         }
     }
 
-    // Step 1: Delete posts by the user. deletePostsByAuthorId expects the user's 'id' field.
-    // If user.id is _id.toString(), this is fine.
-    const postsDeleted = await deletePostsByAuthorId(userToDelete.id); // userToDelete.id should be _id.toString()
+    const postsDeleted = await deletePostsByAuthorId(userToDelete.id); 
     console.log(`Posts deletion result for user ${userToDelete.id}: ${postsDeleted}`);
 
-    // Step 2: Delete notifications related to the user.
-    // deleteNotificationsRelatedToUser also expects the user's 'id' field.
     const notificationsDeleted = await deleteNotificationsRelatedToUser(userToDelete.id);
     console.log(`Notifications deletion result for user ${userToDelete.id}: ${notificationsDeleted}`);
     
-    // Step 3: Delete the user
     const result = await usersCollection.deleteOne({ _id: new ObjectId(userId) });
 
     if (result.deletedCount && result.deletedCount > 0) {

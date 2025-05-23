@@ -249,7 +249,9 @@ export default function PostPage() {
             
             {/* Post Content - using whitespace-pre-wrap to respect newlines from plain text */}
             <div className="prose max-w-none prose-p:text-foreground prose-headings:text-primary text-foreground" style={{ whiteSpace: 'pre-wrap' }}>
-              {post.content}
+              <div
+                dangerouslySetInnerHTML={{ __html: post.content }}
+              />
             </div>
             
             <Separator className="my-8" />

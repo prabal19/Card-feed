@@ -1,193 +1,144 @@
+// src/components/create-post/formatting-toolbar.tsx
 'use client';
-import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
   Bold,
   Italic,
   Underline,
-  Link as LinkIcon,
   List,
   ListOrdered,
-  Heading,
+  Heading1,
+  Heading2,
+  Heading3,
+  Pilcrow,
+  ImagePlus as ImagePlusIcon,
+  Link as LinkIconLucide,
+  Code2 as CodeBlockCurlyIcon, // Changed icon
+  Minus,
 } from 'lucide-react';
 import type { Editor } from '@tiptap/react';
-import clsx from 'clsx';
-import { AddLinkPopup } from '@/components/create-post/add-link-popup';
+import { cn } from '@/lib/utils';
 
 interface FormattingToolbarProps {
   editor: Editor | null;
-  // setContent?: (value: (prev: string) => string) => void;
+  isForAdmin?: boolean;
+  onCommand: (command: string) => void; 
 }
 
-export function FormattingToolbar({ editor }: FormattingToolbarProps) {
-  const [isLinkPopupOpen, setIsLinkPopupOpen] = useState(false);
-  const isActive = (format: string) => {
+export function FormattingToolbar({ editor, isForAdmin = false, onCommand }: FormattingToolbarProps) {
+  const isActive = (format: string, opts?: any) => {
     if (!editor) return false;
-    switch (format) {
-      case 'bold':
-        return editor.isActive('bold');
-      case 'italic':
-        return editor.isActive('italic');
-      case 'underline':
-        return editor.isActive('underline');
-      case 'bulletList':
-        return editor.isActive('bulletList');
-      case 'orderedList':
-        return editor.isActive('orderedList');
-      case 'heading':
-        return editor.isActive('heading', { level: 1 });
-      default:
-        return false;
+    return editor.isActive(format, opts);
+  };
+
+  const handleButtonClick = (command: string, isTiptapCommand = true) => {
+    if (!editor && isTiptapCommand) return;
+
+    if (isTiptapCommand && editor) {
+      const chain = editor.chain().focus();
+      switch (command) {
+        case 'bold': chain.toggleBold().run(); break;
+        case 'italic': chain.toggleItalic().run(); break;
+        case 'underline': chain.toggleUnderline().run(); break;
+        case 'h1': chain.toggleHeading({ level: 1 }).run(); break;
+        case 'h2': chain.toggleHeading({ level: 2 }).run(); break;
+        case 'h3': chain.toggleHeading({ level: 3 }).run(); break;
+        case 'paragraph': chain.setParagraph().run(); break;
+        case 'bulletList': chain.toggleBulletList().run(); break;
+        case 'orderedList': chain.toggleOrderedList().run(); break;
+        case 'horizontalRule': chain.setHorizontalRule().run(); break;
+        default: break;
+      }
+    } else if (!isTiptapCommand) {
+      onCommand(command);
     }
   };
 
-  const handleButtonClick = (command: string) => {
-    if (!editor) return;
-
-    switch (command) {
-      case 'bold':
-        editor.chain().focus().toggleBold().run();
-        break;
-      case 'italic':
-        editor.chain().focus().toggleItalic().run();
-        break;
-      case 'underline':
-        editor.chain().focus().toggleUnderline().run();
-        break;
-      case 'bulletList':
-        editor.chain().focus().toggleBulletList().run();
-        break;
-      case 'orderedList':
-        editor.chain().focus().toggleOrderedList().run();
-        break;
-      case 'heading':
-        editor.chain().focus().toggleHeading({ level: 1 }).run();
-        break;
-      case 'insertLink':
-        setIsLinkPopupOpen(true);
-        break;
-      default:
-        break;
-    }
-  };
-
-  const handleLinkInsert = (linkText: string, linkUrl: string) => {
-  if (!editor) return;
-
-  let fullUrl = linkUrl;
-  if (!linkUrl.startsWith('http://') && !linkUrl.startsWith('https://')) {
-    fullUrl = 'https://' + linkUrl;
-  }
-
-  editor
-    .chain()
-    .focus()
-    .insertContent({
-      type: 'text',
-      text: linkText || fullUrl,
-      marks: [
-        {
-          type: 'link',
-          attrs: {
-            href: fullUrl,
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          },
-        },
-      ],
-    })
-    .run();
-
-  setIsLinkPopupOpen(false);
-};
-
+  const stickyTopClass = isForAdmin ? 'top-0' : 'top-[65px]';
 
   return (
     <>
-    <div className="bg-card border-b sticky top-[65px] z-40">
-      <div className="container mx-auto px-4 py-2 flex items-center gap-1 flex-wrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleButtonClick('bold')}
-          title="Bold"
-          className={clsx({ 'bg-muted text-primary': isActive('bold') })}
-        >
-          <Bold className="h-4 w-4" />
-        </Button>
+      <div className={cn("bg-card border-b sticky z-30", stickyTopClass)}>
+        <div className={cn(
+            "flex items-center justify-center gap-1 flex-wrap",
+            isForAdmin && "max-w-none px-2" 
+          )}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleButtonClick('bold')}
+            title="Bold"
+            className={cn(isActive('bold') && 'bg-muted text-primary')}
+          >
+            <Bold className="h-4 w-4" />
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleButtonClick('italic')}
-          title="Italic"
-          className={clsx({ 'bg-muted text-primary': isActive('italic') })}
-        >
-          <Italic className="h-4 w-4" />
-        </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleButtonClick('italic')}
+            title="Italic"
+            className={cn(isActive('italic') && 'bg-muted text-primary')}
+          >
+            <Italic className="h-4 w-4" />
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleButtonClick('underline')}
-          title="Underline"
-          className={clsx({ 'bg-muted text-primary': isActive('underline') })}
-        >
-          <Underline className="h-4 w-4" />
-        </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleButtonClick('underline')}
+            title="Underline"
+            className={cn(isActive('underline') && 'bg-muted text-primary')}
+          >
+            <Underline className="h-4 w-4" />
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleButtonClick('heading')}
-          title="Heading 1"
-          className={clsx({ 'bg-muted text-primary': isActive('heading') })}
-        >
-          <Heading className="h-4 w-4" />
-        </Button>
+          <Separator orientation="vertical" className="h-6 mx-1" />
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+          <Button variant="ghost" size="sm" onClick={() => handleButtonClick('h1')} title="Heading 1" className={cn(isActive('heading', {level: 1}) && 'bg-muted text-primary')}>
+            <Heading1 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleButtonClick('h2')} title="Heading 2" className={cn(isActive('heading', { level: 2 }) && 'bg-muted text-primary')}>
+            <Heading2 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleButtonClick('h3')} title="Heading 3" className={cn(isActive('heading', { level: 3 }) && 'bg-muted text-primary')}>
+            <Heading3 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleButtonClick('paragraph')} title="Paragraph" className={cn(isActive('paragraph') && 'bg-muted text-primary')}>
+            <Pilcrow className="h-4 w-4" />
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleButtonClick('bulletList')}
-          title="Bulleted List"
-          className={clsx({ 'bg-muted text-primary': isActive('bulletList') })}
-        >
-          <List className="h-4 w-4" />
-        </Button>
+          <Separator orientation="vertical" className="h-6 mx-1" />
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleButtonClick('orderedList')}
-          title="Numbered List"
-          className={clsx({ 'bg-muted text-primary': isActive('orderedList') })}
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleButtonClick('bulletList')} title="Bulleted List" className={cn(isActive('bulletList') && 'bg-muted text-primary')}>
+            <List className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleButtonClick('orderedList')} title="Numbered List" className={cn(isActive('orderedList') && 'bg-muted text-primary')}>
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+          {/* Blockquote button removed */}
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+          <Separator orientation="vertical" className="h-6 mx-1" />
 
+          <Button variant="ghost" size="sm" onClick={() => handleButtonClick('insertImage', false)} title="Insert Image">
+            <ImagePlusIcon className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleButtonClick('insertLink', false)} title="Insert Link">
+            <LinkIconLucide className="h-4 w-4" />
+          </Button>
+           <Button variant="ghost" size="sm" onClick={() => handleButtonClick('insertEmbed', false)} title="Insert Embed">
+            <CodeBlockCurlyIcon className="h-4 w-4" /> {/* Changed to CodeBlockCurlyIcon here too for consistency, though it's for embed */}
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleButtonClick('insertLink')}
-          title="Insert Link"
-        >
-          <LinkIcon className="h-4 w-4" />
-        </Button>
+          
+
+           <Button variant="ghost" size="sm" onClick={() => handleButtonClick('horizontalRule')} title="Horizontal Rule">
+            <Minus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-    </div>
-
-    <AddLinkPopup
-        isOpen={isLinkPopupOpen}
-        onClose={() => setIsLinkPopupOpen(false)}
-        onSubmit={handleLinkInsert}
-      />
-      </>
+    </>
   );
 }

@@ -1,126 +1,36 @@
+
 // src/app/admin/add-blog/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEditor, EditorContent, type Editor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
-import { FormattingToolbar } from '@/components/create-post/formatting-toolbar';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { PostSubmissionPopup } from '@/components/blog/post-submission-popup';
-import { categories as allCategories } from '@/lib/data';
+import { CreatePostContent } from '@/app/create-post/page'; 
 import { useToast } from '@/hooks/use-toast';
-import { Send, Loader2, UserPlus, Users, XCircle } from 'lucide-react';
-import { createPost, type CreatePostActionInput as CreatePostInput } from '@/app/actions/post.actions';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
-import type { UserSummary } from '@/types';
+import type { UserSummary } from '@/types'; 
+import { Button } from '@/components/ui/button';
+import { UserPlus, Users, XCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AddNewAuthorDialog } from '@/components/admin/add-new-author-dialog';
 import { SelectExistingAuthorDialog } from '@/components/admin/select-existing-author-dialog';
+import { Separator } from '@/components/ui/separator';
 
 export default function AdminAddBlogPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user: adminUser, isLoading: authIsLoading, isAdmin } = useAuth();
-  const [title, setTitle] = useState('');
+  const { user: adminUserFromAuthContext, isLoading: authIsLoading, isAdmin } = useAuth();
+
   const [selectedAuthor, setSelectedAuthor] = useState<UserSummary | null>(null);
-  const [isPostSubmissionPopupOpen, setIsPostSubmissionPopupOpen] = useState(false);
   const [isAddNewAuthorDialogOpen, setIsAddNewAuthorDialogOpen] = useState(false);
   const [isSelectExistingAuthorDialogOpen, setIsSelectExistingAuthorDialogOpen] = useState(false);
 
-  const editor = useEditor({
-  extensions: [
-    StarterKit.configure({
-      heading: {
-        levels: [1],
-      },
-    }),
-    Underline,
-    Link.configure({
-      openOnClick: true,
-      autolink: true,
-      linkOnPaste: true,
-      HTMLAttributes: {
-        target: '_blank',
-        rel: 'noopener noreferrer',
-        class: 'tiptap-link', // Optional class for styling
-      },
-    }),
-    Image,
-  ],
-});
-
-
   useEffect(() => {
-    if (!authIsLoading && !isAdmin) { // Use isAdmin from useAuth hook
+    if (!authIsLoading && !isAdmin) {
       toast({ title: "Unauthorized", description: "You are not authorized to access this page.", variant: "destructive" });
-      router.push('/admin'); // Redirect to admin login page
+      router.push('/admin');
     }
   }, [isAdmin, authIsLoading, router, toast]);
-
-
-  
-  const handleSubmitClick = () => {
-    if (!selectedAuthor) {
-      toast({ title: "Author Not Selected", description: "Please select or add an author for this post.", variant: "destructive" });
-      return;
-    }
-    if (!title.trim()) {
-      toast({ title: "Title Required", description: "Please enter a title for your post.", variant: "destructive" });
-      return;
-    }
-    if (!editor || editor.isEmpty) {
-      toast({ title: "Content Required", description: "Please enter some content for your post.", variant: "destructive" });
-      return;
-    }
-    setIsPostSubmissionPopupOpen(true);
-  };
-
-  const handleFinalSubmit = async (formData: { coverImage?: File; categorySlug: string }) => {
-    if (!adminUser || !selectedAuthor || !editor) {
-      toast({ title: "Error", description: "Missing critical information for submission.", variant: "destructive" });
-      return;
-    }
-
-    let imageUrl = `https://picsum.photos/seed/${encodeURIComponent(title)}/600/400`;
-    if (formData.coverImage) {
-      console.log("Simulating upload for:", formData.coverImage.name);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      imageUrl = `https://picsum.photos/seed/${encodeURIComponent(title)}-${Date.now()}/600/400`;
-      toast({ title: "Image Uploaded (Mock)", description: "Cover image processed." });
-    }
-
-    const postData: CreatePostInput = {
-      title,
-      content: editor.getHTML(), // Get HTML content from Tiptap
-      categorySlug: formData.categorySlug,
-      authorId: selectedAuthor.id, // Use selected author's ID
-      imageUrl: imageUrl,
-      status: 'pending', // Posts created by admin also start as pending
-    };
-
-    try {
-      const newPost = await createPost(postData);
-      if (newPost) {
-        toast({ title: "Post Submitted!", description: `Post "${newPost.title}" is pending review.` });
-        setTitle('');
-        editor.commands.setContent('');
-        setSelectedAuthor(null); // Reset selected author
-        setIsPostSubmissionPopupOpen(false);
-        router.push(`/admin/blogs`);
-      } else {
-        throw new Error("Failed to create post on server.");
-      }
-    } catch (error) {
-      console.error("Submission error:", error);
-      toast({ title: "Submission Failed", description: String(error), variant: "destructive" });
-    }
-  };
   
   const handleAuthorSelected = (author: UserSummary) => {
     setSelectedAuthor(author);
@@ -131,18 +41,19 @@ export default function AdminAddBlogPage() {
   if (authIsLoading) {
     return <div className="flex-grow flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
-  if (!isAdmin) { // Ensure content isn't rendered if not admin, even before redirect kicks in
+  
+  if (!isAdmin) {
       return <div className="flex-grow flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-2">Verifying admin access...</p></div>;
   }
 
+
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-card p-4 border-b sticky top-0 z-10">
-        <h1 className="text-2xl font-bold text-primary mb-4">Add New Blog Post</h1>
+      <div className="bg-card p-4 border-b sticky top-0 z-40">
+        <h1 className="text-2xl font-bold text-primary mb-4">Add New Blog Post (Admin)</h1>
         
-        {/* Section 1: Author Selection */}
         <div className="mb-6 p-4 border rounded-lg bg-muted/30">
-          <h2 className="text-lg font-semibold mb-3 text-foreground">1. Choose Author</h2>
+          <h2 className="text-lg font-semibold mb-3 text-foreground">1. Choose Author for this Post</h2>
           {selectedAuthor ? (
             <div className="flex items-center justify-between p-3 bg-background rounded-md shadow">
               <div className="flex items-center gap-3">
@@ -170,42 +81,20 @@ export default function AdminAddBlogPage() {
             </div>
           )}
         </div>
-        
-        <Separator className="my-4" />
-        
-        <h2 className="text-lg font-semibold mb-3 text-foreground">2. Blog Details & Content</h2>
-         <div className="mb-4">
-            <label htmlFor="post-title-admin" className="block text-sm font-medium text-foreground mb-1">
-            Post Title
-            </label>
-            <Input
-            id="post-title-admin"
-            type="text"
-            placeholder="Enter post title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-lg"
-            disabled={!selectedAuthor}
-            />
-        </div>
-      </div>
-
-      {/* Formatting Toolbar - pass editor instance */}
-      <FormattingToolbar editor={editor} />
-
-      {/* Section 2: Blog Editor */}
-      <div className="flex-grow p-4 bg-card">
-        <EditorContent editor={editor} className={!selectedAuthor ? "opacity-50 pointer-events-none" : ""} />
-        {!selectedAuthor && (
-            <p className="text-center text-muted-foreground mt-4 text-sm">Please select an author before writing the post.</p>
-        )}
       </div>
       
-      <div className="p-4 border-t bg-card sticky bottom-0 z-10">
-        <Button onClick={handleSubmitClick} size="lg" className="w-full" disabled={!selectedAuthor || !title.trim() || (editor?.isEmpty ?? true)}>
-          <Send className="mr-2 h-5 w-5" />
-          Proceed to Publish
-        </Button>
+      <Separator className="my-0" />
+
+      <div className={!selectedAuthor ? "opacity-50 pointer-events-none flex-grow overflow-y-auto" : "flex-grow overflow-y-auto"}>
+        {selectedAuthor ? (
+          <Suspense fallback={<div className="flex-grow flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+            <CreatePostContent isForAdmin={true} adminSelectedAuthor={selectedAuthor} /> 
+          </Suspense>
+        ) : (
+          <div className="p-8 text-center text-muted-foreground">
+            <p>Please select or add an author above before creating the blog post.</p>
+          </div>
+        )}
       </div>
 
       <AddNewAuthorDialog
@@ -218,14 +107,7 @@ export default function AdminAddBlogPage() {
         onClose={() => setIsSelectExistingAuthorDialogOpen(false)}
         onAuthorSelected={handleAuthorSelected}
       />
-      <PostSubmissionPopup
-        isOpen={isPostSubmissionPopupOpen}
-        onClose={() => setIsPostSubmissionPopupOpen(false)}
-        postTitle={title}
-        categories={allCategories}
-        onSubmit={handleFinalSubmit}
-      />
-      
     </div>
   );
 }
+

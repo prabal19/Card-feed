@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea'; // Import Textarea
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, UserCircle } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
@@ -23,11 +24,13 @@ import { BlogCard } from '@/components/blog/blog-card';
 import { Separator } from '@/components/ui/separator';
 import { AppFooter } from '@/components/layout/footer';
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
   lastName: z.string().min(1, "Last name is required."),
   description: z.string().max(500, "Description must be 500 characters or less.").optional().or(z.literal('')),
-  profileImageUrl: z.string().url("Invalid URL for profile image.").optional().or(z.literal('')),
+  profileImageUrl: z.string().optional().or(z.literal('')), // Can be data URI or external URL
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -43,7 +46,6 @@ export default function UserProfilePage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
 
@@ -76,9 +78,7 @@ export default function UserProfilePage() {
             description: fetchedUser.description || '',
             profileImageUrl: fetchedUser.profileImageUrl || '',
           });
-          if (fetchedUser.profileImageUrl) {
-            setImagePreview(fetchedUser.profileImageUrl);
-          }
+          setImagePreview(fetchedUser.profileImageUrl || null);
 
           const posts = await getPostsByAuthorId(userId as string);
           setAuthorPosts(posts);
@@ -88,7 +88,7 @@ export default function UserProfilePage() {
           setProfileUser(null); 
           setIsLoadingPosts(false);
           toast({ title: "Profile Not Found", description: "The user profile could not be loaded.", variant: "destructive" });
-          // router.push('/'); // Optionally redirect if profile not found
+          // router.push('/'); 
         }
       } catch (error) {
         toast({ title: "Failed to load profile data", description: String(error), variant: "destructive" });
@@ -106,13 +106,26 @@ export default function UserProfilePage() {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedImageFile(file);
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "Image Too Large",
+          description: `Please select an image smaller than ${MAX_FILE_SIZE / (1024 * 1024)}MB.`,
+          variant: "destructive",
+        });
+        event.target.value = ''; // Clear the input
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-        form.setValue('profileImageUrl', reader.result as string, { shouldValidate: true }); 
+        const dataUri = reader.result as string;
+        setImagePreview(dataUri);
+        form.setValue('profileImageUrl', dataUri, { shouldValidate: true, shouldDirty: true }); 
       };
       reader.readAsDataURL(file);
+    } else {
+        // If file selection is cleared, revert to original or empty
+        setImagePreview(profileUser?.profileImageUrl || null);
+        form.setValue('profileImageUrl', profileUser?.profileImageUrl || '', { shouldValidate: true, shouldDirty: true });
     }
   };
 
@@ -127,29 +140,15 @@ export default function UserProfilePage() {
         firstName: data.firstName, 
         lastName: data.lastName,
         description: data.description,
+        profileImageUrl: data.profileImageUrl, // This will be the data URI if a new image was selected
     };
     
-    if (selectedImageFile) {
-        // Simulate image upload. In a real app, this would be an API call.
-        await new Promise(res => setTimeout(res, 500)); 
-        // Use a placeholder URL or a URL from a real storage service
-        updateData.profileImageUrl = `https://picsum.photos/seed/${authUser.id}-${Date.now()}/200/200`; 
-        setImagePreview(updateData.profileImageUrl); 
-    } else if (data.profileImageUrl && data.profileImageUrl !== profileUser.profileImageUrl) {
-        // If a new URL is provided directly (e.g., typed in)
-        updateData.profileImageUrl = data.profileImageUrl;
-    } else if (!data.profileImageUrl && profileUser.profileImageUrl) {
-        // If profileImageUrl is cleared in form
-        updateData.profileImageUrl = ""; 
-    }
-
-
     try {
       const updatedUser = await updateUserProfile(profileUser.id, updateData);
       if (updatedUser) {
         setProfileUser(updatedUser);
         if (authUser.id === updatedUser.id) { 
-            updateAuthUser(updatedUser); // Update auth context user as well
+            updateAuthUser(updatedUser); 
         }
         toast({ title: "Profile Updated", description: "Your profile has been successfully updated." });
         form.reset({ 
@@ -158,9 +157,7 @@ export default function UserProfilePage() {
             description: updatedUser.description || '',
             profileImageUrl: updatedUser.profileImageUrl || '',
         });
-        if (updatedUser.profileImageUrl) setImagePreview(updatedUser.profileImageUrl);
-        else setImagePreview(null);
-        setSelectedImageFile(null); // Clear selected file after successful upload
+        setImagePreview(updatedUser.profileImageUrl || null);
       } else {
         toast({ title: "Update Failed", description: "Could not update profile.", variant: "destructive" });
       }
@@ -209,7 +206,7 @@ export default function UserProfilePage() {
         <Card className="max-w-3xl mx-auto shadow-xl my-8 bg-card">
           <CardHeader className="text-center border-b pb-6">
             <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-primary shadow-lg">
-              <AvatarImage src={imagePreview || profileUser.profileImageUrl || `https://picsum.photos/seed/${profileUser.id}/200/200`} alt={`${profileUser.firstName} ${profileUser.lastName}`} data-ai-hint="user profile large"/>
+              <AvatarImage src={imagePreview || `https://picsum.photos/seed/${profileUser.id}/200/200`} alt={`${profileUser.firstName} ${profileUser.lastName}`} data-ai-hint="user profile large"/>
               <AvatarFallback className="text-4xl">{profileUser.firstName?.charAt(0)}{profileUser.lastName?.charAt(0)}</AvatarFallback>
             </Avatar>
             <CardTitle className="text-3xl font-bold text-primary">{profileUser.firstName} {profileUser.lastName}</CardTitle>
@@ -219,16 +216,14 @@ export default function UserProfilePage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="profile-image-upload">Profile Picture</Label>
-                  <div className="flex items-center gap-4">
-                    <Input 
-                      id="profile-image-upload" 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleImageChange} 
-                      className="flex-grow"
-                      disabled={isSubmitting}
-                    />
-                  </div>
+                  <Input 
+                    id="profile-image-upload" 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleImageChange} 
+                    className="flex-grow"
+                    disabled={isSubmitting}
+                  />
                   {form.formState.errors.profileImageUrl && <p className="text-destructive text-sm mt-1">{form.formState.errors.profileImageUrl.message}</p>}
                 </div>
                 
@@ -270,7 +265,6 @@ export default function UserProfilePage() {
                 </Button>
               </form>
             ) : (
-              // Read-only view for visitors
               <div className="pt-4">
                 {profileUser.description ? (
                   <>
@@ -309,6 +303,7 @@ export default function UserProfilePage() {
         </div>
 
       </main>
+      <AppFooter />
     </div>
   );
 }

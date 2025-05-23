@@ -6,20 +6,30 @@ import { useRouter } from 'next/navigation';
 import { getUserProfile, findOrCreateUserFromGoogle, verifyAdminCredentials } from '@/app/actions/user.actions';
 import { useToast } from '@/hooks/use-toast';
 import { CompleteProfileDialog } from '@/components/auth/complete-profile-dialog';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged,signOut } from 'firebase/auth';
+
+function isProfileComplete(user: User | null): boolean {
+  if (!user) return false;
+  return Boolean(user.firstName && user.lastName && user.profileImageUrl);
+}
 
 export interface GoogleAuthData {
   email: string;
-  firstName?: string; 
-  lastName?: string;  
-  profileImageUrl?: string; 
-  googleId?: string; 
+  googleId?: string; // Firebase UID (optional, for linking)
 }
+
 
 export interface CompleteProfileFormData {
   firstName: string;
   lastName: string;
   description: string;
-  profileImageFile?: File; 
+  profileImageDataUri: string;
+}
+interface CreateUserInput extends CompleteProfileFormData {
+  email: string;
+  googleId?: string;
+  authProvider: 'google';
 }
 
 interface AdminLoginData {
@@ -51,22 +61,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isCompleteProfileDialogOpen, setCompleteProfileDialogOpen] = useState(false);
   const [googleAuthDataForDialog, setGoogleAuthDataForDialog] = useState<GoogleAuthData | null>(null);
 
-  useEffect(() => {
-    const storedUserJson = sessionStorage.getItem('cardfeed_user');
-    if (storedUserJson) {
-      try {
-        const storedUser: User = JSON.parse(storedUserJson);
-        setUser(storedUser);
-        if (storedUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL || storedUser.role === 'admin') {
-          setIsAdmin(true);
-        }
-      } catch (error) {
-        console.error("Failed to parse stored user:", error);
-        sessionStorage.removeItem('cardfeed_user');
+useEffect(() => {
+  const storedUserJson = sessionStorage.getItem('cardfeed_user');
+  if (storedUserJson) {
+    try {
+      const storedUser: User = JSON.parse(storedUserJson);
+      setUser(storedUser);
+      if (storedUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL || storedUser.role === 'admin') {
+        setIsAdmin(true);
       }
+    } catch (error) {
+      console.error("Failed to parse stored user:", error);
+      sessionStorage.removeItem('cardfeed_user');
+    }
+  }
+
+  // ✅ Always run this — even if sessionStorage has a user
+  const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    if (firebaseUser?.email) {
+      try {
+        const existingUser = await getUserProfile(firebaseUser.email);
+        if (existingUser) {
+          await login(existingUser);
+        } else {
+          console.warn('No user profile found for Firebase user');
+        }
+      } catch (err) {
+        console.error('Failed to auto-login with Firebase:', err);
+      }
+    } else {
+      // ✅ No Firebase user — clear app state
+      setUser(null);
+      setIsAdmin(false);
+      sessionStorage.removeItem('cardfeed_user');
     }
     setIsLoading(false);
-  }, []);
+  });
+
+  return () => unsubscribe(); // Cleanup on unmount
+}, []);
+
+
+
 
   const performLoginSteps = (loggedInUser: User) => {
     let finalUser = { ...loggedInUser };
@@ -126,78 +162,104 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAdmin(false);
-    sessionStorage.removeItem('cardfeed_user');
-    toast({ title: "Logged Out", description: "You have been successfully logged out."});
-    router.push('/');
-  };
+  const logout = async () => {
+  try {
+    await signOut(auth); // 🔥 signs the user out from Firebase
+  } catch (error) {
+    console.error('Firebase sign-out error:', error);
+  }
 
-  const initiateGoogleLoginOrSignup = async (googleData: GoogleAuthData, intent: 'login' | 'signup') => {
-    setIsLoading(true);
-    try {
-      const existingUser = await getUserProfile(googleData.email);
+  setUser(null);
+  setIsAdmin(false);
+  sessionStorage.removeItem('cardfeed_user');
+  toast({ title: "Logged Out", description: "You have been successfully logged out." });
+  router.push('/');
+};
 
-      if (intent === 'login') {
-        if (existingUser) {
-          await login(existingUser); 
-        } else {
-          toast({ title: "Account Not Found", description: "No account found with this Google email. Please sign up first.", variant: "destructive" });
-        }
-      } else if (intent === 'signup') {
-        if (existingUser) {
-          await login(existingUser); 
+ const initiateGoogleLoginOrSignup = async (googleData: GoogleAuthData, intent: 'login' | 'signup') => {
+  setIsLoading(true);
+  try {
+    const existingUser = await getUserProfile(googleData.email);
+
+    if (intent === 'login') {
+      if (existingUser) {
+        await login(existingUser);
+      } else {
+        toast({
+          title: "Account Not Found",
+          description: "No account found with this Google email. Please sign up first.",
+          variant: "destructive"
+        });
+      }
+    } else if (intent === 'signup') {
+      if (existingUser) {
+        if (isProfileComplete(existingUser)) {
+          await login(existingUser);
           toast({ title: "Account Exists", description: "Logged you in with your existing Google account." });
         } else {
+          // Existing but incomplete profile — show popup
           setGoogleAuthDataForDialog(googleData);
           setCompleteProfileDialogOpen(true);
-          return; 
+          return;
         }
-      }
-    } catch (error) {
-      console.error(`Google ${intent} error:`, error);
-      toast({ title: `Google ${intent} Failed`, description: error instanceof Error ? error.message : "An unexpected error occurred.", variant: "destructive"});
-    } finally {
-      if (!isCompleteProfileDialogOpen) {
-        setIsLoading(false);
+      } else {
+        // New user — show complete profile dialog
+        setGoogleAuthDataForDialog(googleData);
+        setCompleteProfileDialogOpen(true);
+        return;
       }
     }
-  };
+  } catch (error) {
+    console.error(`Google ${intent} error:`, error);
+    toast({
+      title: `Google ${intent} Failed`,
+      description: error instanceof Error ? error.message : "An unexpected error occurred.",
+      variant: "destructive"
+    });
+  } finally {
+    if (!isCompleteProfileDialogOpen) {
+      setIsLoading(false);
+    }
+  }
+};
 
-   const handleCompleteProfileSubmit = async (formData: CompleteProfileFormData) => {
+ const handleCompleteProfileSubmit = async (formData: CompleteProfileFormData) => {
     if (!googleAuthDataForDialog) {
         toast({ title: "Error", description: "Google authentication data is missing.", variant: "destructive"});
         setCompleteProfileDialogOpen(false);
+        setGoogleAuthDataForDialog(null);
         setIsLoading(false);
         return;
     }
-    setIsLoading(true); 
+    // isLoading is already true from initiateGoogleLoginOrSignup
     try {
         const userFromDb = await findOrCreateUserFromGoogle({
-            googleAuthData: googleAuthDataForDialog,
-            profileFormData: formData,
+            googleAuthData: {
+                ...googleAuthDataForDialog,
+                
+            },
+            profileFormData: { 
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                description: formData.description,
+                profileImageDataUri: formData.profileImageDataUri || '',
+            },
         });
 
         if (userFromDb) {
-            // Ensure authProvider is set correctly before login
             userFromDb.authProvider = 'google';
-            await login(userFromDb); 
+            await login(userFromDb); // login will set isLoading to false
         } else {
             throw new Error("Failed to finalize Google user profile.");
         }
     } catch (error) {
         console.error("Error completing Google profile:", error);
         toast({ title: "Profile Setup Failed", description: error instanceof Error ? error.message : "Could not save profile details.", variant: "destructive"});
-        // Keep dialog open if error, isLoading true
-        // setIsLoading(false); // only if dialog is closed
-    } finally {
-        // Login function handles its own isLoading state
-        // if dialog is still open, isLoading should remain true or be handled by its own flow.
-        // If login was successful, isLoading is set to false by login()
+        setIsLoading(false); // Set loading false if submission fails before login
+        setCompleteProfileDialogOpen(false); // Close dialog on error
+        setGoogleAuthDataForDialog(null);
     }
   };
-
 
   return (
     <AuthContext.Provider value={{ user, isLoading, isAdmin, login, logout, initiateGoogleLoginOrSignup }}>
