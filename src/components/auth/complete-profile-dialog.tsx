@@ -2,11 +2,11 @@
 // src/components/auth/complete-profile-dialog.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { GoogleAuthData, CompleteProfileFormData } from '@/contexts/auth-context'; // Uses updated type
+import type { GoogleAuthData, CompleteProfileFormData } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,29 +19,32 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Loader2} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; 
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const completeProfileSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
   lastName: z.string().min(1, "Last name is required."),
   description: z.string().min(10, "Please tell us a bit about yourself (min 10 characters).").max(500, "Description must be 500 characters or less."),
-  // profileImageFile is no longer in schema as we pass data URI directly
 });
 
-type FormValues = Omit<z.infer<typeof completeProfileSchema>, 'profileImageFile'>; // Schema doesn't include file
+type FormValues = z.infer<typeof completeProfileSchema>;
 
 interface CompleteProfileDialogProps {
   isOpen: boolean;
   onClose: () => void;
   googleAuthData: GoogleAuthData;
-  onSubmit: (formData: CompleteProfileFormData) => Promise<void>; // onSubmit expects CompleteProfileFormData
+  onSubmit: (formData: CompleteProfileFormData) => Promise<void>;
 }
 
 export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmit }: CompleteProfileDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageDataUri, setImageDataUri] = useState<string>(''); // For the data URI
+  const [imageDataUri, setImageDataUri] = useState<string | undefined>(undefined); // Will hold the data URI of uploaded image
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(completeProfileSchema),
@@ -51,20 +54,45 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
       description: '',
     },
   });
+  
+  useEffect(() => {
+    if (isOpen && googleAuthData) {
+      form.reset({
+        firstName: '',
+        lastName: '',
+        description: '',
+      });
+      const initialImage = null;
+      setImagePreview(initialImage); // Preview with Google's image or null
+      setImageDataUri(undefined); // Reset imageDataUri, it will be set if user uploads a new file
+    }
+  }, [isOpen, googleAuthData, form]);
+
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "Image Too Large",
+          description: `Please select an image smaller than ${MAX_FILE_SIZE / (1024 * 1024)}MB.`,
+          variant: "destructive",
+        });
+        event.target.value = ''; 
+        setImagePreview(null); // Revert preview to Google's image
+        setImageDataUri(undefined); // Clear uploaded data URI
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUri = reader.result as string;
-        setImagePreview(dataUri);
-        setImageDataUri(dataUri); // Store the data URI
+        setImagePreview(dataUri); // Set preview to the new uploaded image
+        setImageDataUri(dataUri); // Store the data URI of the new image
       };
       reader.readAsDataURL(file);
     } else {
-      setImagePreview( null);
-      setImageDataUri('');
+      setImagePreview(null); // Revert preview if selection cancelled
+      setImageDataUri(undefined); // Clear uploaded data URI
     }
   };
 
@@ -75,7 +103,7 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
         firstName: data.firstName,
         lastName: data.lastName,
         description: data.description,
-        profileImageDataUri: imageDataUri, // Pass the data URI
+        profileImageUrl: imageDataUri || '', // Pass the current data URI (could be new, or undefined if not changed/cleared)
       });
     } catch (error) {
       console.error("Dialog submit error:", error);
@@ -86,32 +114,37 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
   
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      onClose();
-      form.reset({ 
-        firstName: '',
-        lastName: '',
-        description: '',
-      });
-      setImagePreview( null);
-      setImageDataUri('');
+      onClose(); 
     }
   };
 
-  return (
+  if (!googleAuthData) return null; // Should not happen if isOpen is true based on AuthContext logic
+
+  
+  const watchedFirstName = form.watch('firstName');
+  const watchedLastName = form.watch('lastName');
+
+    return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Complete Your Profile</DialogTitle>
           <DialogDescription>
-            Welcome! Please provide a few more details to set up your CardFeed account. Your email is {googleAuthData.email}.
+            Welcome! Please provide a few more details to set up your CardFeed account.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-2">
           <div className="flex flex-col items-center space-y-2">
-            <Avatar className="h-24 w-24 mb-2">
-              <AvatarImage src={imagePreview || undefined} alt="Profile preview" data-ai-hint="profile preview"/>
+            <Avatar className="h-28 w-28 border-2 border-primary shadow-sm"> {/* Changed to Avatar */}
+              <AvatarImage 
+                src={imagePreview || undefined} 
+                alt="Profile preview" 
+                className="object-cover"
+                data-ai-hint="profile preview"
+              />
               <AvatarFallback className="text-3xl">
-                { googleAuthData.email?.charAt(0).toUpperCase()}
+                {(watchedFirstName || '').charAt(0)}
+                {(watchedLastName || '').charAt(0)}
               </AvatarFallback>
             </Avatar>
             <Input

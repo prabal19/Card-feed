@@ -273,7 +273,7 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
           <div className="flex items-center gap-3 mb-2">
             <Link href={authorLinkPath} className="cursor-pointer">
                 <Avatar className="h-10 w-10">
-                <AvatarImage src={postData.author.imageUrl} alt={postData.author.name} data-ai-hint="author portrait" />
+                <AvatarImage src={postData.author.imageUrl} alt={postData.author.name} data-ai-hint="author portrait" className="object-cover"/>
                 <AvatarFallback>{postData.author?.name?.substring(0, 1) || 'A'}</AvatarFallback>
                 </Avatar>
             </Link>
@@ -406,7 +406,7 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
                   <div key={comment.id || comment._id?.toString()} className="text-xs p-1.5 bg-muted/50 rounded">
                      <div className="flex items-center gap-1 mb-0.5">
                         <Avatar className="h-5 w-5">
-                            <AvatarImage src={comment.author.imageUrl} alt={comment.author.name} data-ai-hint="commenter avatar small"/>
+                            <AvatarImage src={comment.author.imageUrl} alt={comment.author.name} data-ai-hint="commenter avatar small" className="object-cover"/>
                             <AvatarFallback className="text-xs">{comment.author.name.substring(0,1)}</AvatarFallback>
                         </Avatar>
                         <p className="font-medium text-xs">{comment.author.name}:</p>

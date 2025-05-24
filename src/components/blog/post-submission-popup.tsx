@@ -30,6 +30,7 @@ interface PostSubmissionPopupProps {
   categories: Category[];
   onSubmit: (formData: { coverImageDataUri: string; categorySlug: string; excerpt: string }) => Promise<void> | void;
   authorSummary?: UserSummary | null; 
+  initialPreviewImageFromContent?: string | null;
 }
 
 export function PostSubmissionPopup({
@@ -40,6 +41,7 @@ export function PostSubmissionPopup({
   categories,
   onSubmit,
   authorSummary,
+  initialPreviewImageFromContent,
 }: PostSubmissionPopupProps) {
   const { user: loggedInUser } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
@@ -56,8 +58,11 @@ export function PostSubmissionPopup({
         const defaultExcerpt = postContent.substring(0, 150) + (postContent.length > 150 ? '...' : '');
         setPreviewSubtitle(defaultExcerpt);
       }
+      if (initialPreviewImageFromContent && !coverImageDataUri) {
+        setCoverImageDataUri(initialPreviewImageFromContent);
+      }
     }
-  }, [isOpen, postContent, previewSubtitle]);
+  }, [isOpen, postContent, previewSubtitle,initialPreviewImageFromContent, coverImageDataUri]);
 
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,7 +75,7 @@ export function PostSubmissionPopup({
           variant: "destructive",
         });
         event.target.value = ''; // Clear the input
-        setCoverImageDataUri(null);
+        setCoverImageDataUri(initialPreviewImageFromContent ||null);
         return;
       }
       const reader = new FileReader();
@@ -79,7 +84,7 @@ export function PostSubmissionPopup({
       };
       reader.readAsDataURL(file);
     } else {
-      setCoverImageDataUri(null);
+      setCoverImageDataUri(initialPreviewImageFromContent ||null);
     }
   };
 
@@ -144,7 +149,7 @@ export function PostSubmissionPopup({
               <h3 className="text-lg font-semibold mb-2 text-foreground">Story Preview</h3>
               <label
                 htmlFor="cover-image-upload-popup"
-                className="mt-1 flex justify-center items-center w-full h-48 border-2 border-border border-dashed rounded-md cursor-pointer hover:border-primary transition-colors bg-muted/30 relative overflow-hidden"
+                className="mt-1 flex justify-center items-center w-full h-64 border-2 border-border border-dashed rounded-md cursor-pointer hover:border-primary transition-colors bg-muted/30 relative overflow-hidden"
               >
                 {coverImageDataUri ? (
                   <Image 

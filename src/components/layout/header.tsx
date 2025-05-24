@@ -1,7 +1,7 @@
 // src/components/layout/header.tsx
 'use client';
 
-import { Newspaper, Search, Bell, LogIn, UserPlus, LogOut, User as UserIcon, Menu, ShieldAlert } from 'lucide-react';
+import { Newspaper, Search, Bell, UserPlus, LogOut, User as UserIcon, Menu, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,9 +133,9 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={user.profileImageUrl || `https://picsum.photos/seed/${user.id}/36/36`} alt={user.firstName} data-ai-hint="user avatar"/>
+                      <AvatarImage src={user.profileImageUrl || `https://picsum.photos/seed/${user.id}/36/36`} alt={user.firstName} data-ai-hint="user avatar" className="object-cover"/>
                       <AvatarFallback>{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </Button>

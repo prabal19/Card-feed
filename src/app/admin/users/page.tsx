@@ -320,7 +320,7 @@ export default function AdminUsersPage() {
                     <TableRow key={user.id} className={cn(user.isBlocked && "bg-destructive/10 opacity-70")}>
                       <TableCell>
                         <Avatar className="h-9 w-9">
-                          <AvatarImage src={user.profileImageUrl || `https://picsum.photos/seed/${user.id}/40/40`} alt={`${user.firstName} ${user.lastName}`} data-ai-hint="user avatar"/>
+                          <AvatarImage src={user.profileImageUrl || `https://picsum.photos/seed/${user.id}/40/40`} alt={`${user.firstName} ${user.lastName}`} data-ai-hint="user avatar" className="object-cover"/>
                           <AvatarFallback>{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</AvatarFallback>
                         </Avatar>
                       </TableCell>

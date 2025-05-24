@@ -24,7 +24,7 @@ export interface CompleteProfileFormData {
   firstName: string;
   lastName: string;
   description: string;
-  profileImageDataUri: string;
+  profileImageUrl: string;
 }
 interface CreateUserInput extends CompleteProfileFormData {
   email: string;
@@ -107,7 +107,7 @@ useEffect(() => {
   const performLoginSteps = (loggedInUser: User) => {
     let finalUser = { ...loggedInUser };
     if (!finalUser.profileImageUrl) {
-      finalUser.profileImageUrl = `https://picsum.photos/seed/${finalUser.id}/200/200`;
+      finalUser.profileImageUrl = `https://placehold.co/200x200.png?text=${finalUser.firstName?.charAt(0) || 'U'}`; // Consistent placeholder
     }
     if (finalUser.description === undefined) {
       finalUser.description = ""; 
@@ -121,14 +121,16 @@ useEffect(() => {
 
     toast({ title: "Login Successful", description: `Welcome back, ${finalUser.firstName}!`});
     
+    setCompleteProfileDialogOpen(false); 
+    setGoogleAuthDataForDialog(null); 
+    setIsLoading(false); // Ensure loading is false after all steps
+
     if (isAdminUser) {
       router.push('/admin/dashboard');
     } else {
       router.push('/');
     }
     
-    setCompleteProfileDialogOpen(false); 
-    setGoogleAuthDataForDialog(null); 
   }
 
   const login = async (loginData: AdminLoginData | User) => {
@@ -157,9 +159,7 @@ useEffect(() => {
     } catch (error) {
       console.error("Login error:", error);
       throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    } 
   };
 
   const logout = async () => {
@@ -200,7 +200,6 @@ useEffect(() => {
           // Existing but incomplete profile — show popup
           setGoogleAuthDataForDialog(googleData);
           setCompleteProfileDialogOpen(true);
-          return;
         }
       } else {
         // New user — show complete profile dialog
@@ -234,16 +233,9 @@ useEffect(() => {
     // isLoading is already true from initiateGoogleLoginOrSignup
     try {
         const userFromDb = await findOrCreateUserFromGoogle({
-            googleAuthData: {
-                ...googleAuthDataForDialog,
-                
-            },
-            profileFormData: { 
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                description: formData.description,
-                profileImageDataUri: formData.profileImageDataUri || '',
-            },
+            googleAuthData: googleAuthDataForDialog, // Pass the original googleData
+            profileFormData: formData, // Pass the form data including new profileImageDataUri
+
         });
 
         if (userFromDb) {
@@ -255,9 +247,9 @@ useEffect(() => {
     } catch (error) {
         console.error("Error completing Google profile:", error);
         toast({ title: "Profile Setup Failed", description: error instanceof Error ? error.message : "Could not save profile details.", variant: "destructive"});
-        setIsLoading(false); // Set loading false if submission fails before login
         setCompleteProfileDialogOpen(false); // Close dialog on error
         setGoogleAuthDataForDialog(null);
+        setIsLoading(false); 
     }
   };
 
@@ -270,7 +262,7 @@ useEffect(() => {
           onClose={() => {
             setCompleteProfileDialogOpen(false);
             setGoogleAuthDataForDialog(null);
-            setIsLoading(false);
+            if (isLoading) setIsLoading(false);
           }}
           googleAuthData={googleAuthDataForDialog}
           onSubmit={handleCompleteProfileSubmit}

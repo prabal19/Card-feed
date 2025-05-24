@@ -6,7 +6,6 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AppHeader } from '@/components/layout/header';
-import { AppFooter } from '@/components/layout/footer';
 import { TrendingSidebar } from '@/components/blog/trending-sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -183,7 +182,6 @@ export default function PostPage() {
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
           </div>
         </main>
-        <AppFooter />
       </>
     );
   }
@@ -200,7 +198,6 @@ export default function PostPage() {
             <Link href="/">Go to Homepage</Link>
           </Button>
         </main>
-        <AppFooter />
       </>
     );
   }
@@ -215,7 +212,7 @@ export default function PostPage() {
           {/* Main Post Content Area */}
           <article className="w-full lg:w-2/3 bg-card shadow-xl rounded-lg p-6 md:p-8">
             {post.imageUrl && (
-              <div className="relative w-full h-64 md:h-96 mb-6 rounded-md overflow-hidden">
+              <div className="relative w-full h-80 md:h-[500px] mb-6 rounded-md overflow-hidden">
                 <Image
                   src={post.imageUrl}
                   alt={post.title}
@@ -232,7 +229,7 @@ export default function PostPage() {
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Link href={authorLinkPath} className="flex items-center gap-2 hover:text-primary">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={post.author.imageUrl} alt={post.author.name} data-ai-hint="author avatar"/>
+                    <AvatarImage src={post.author.imageUrl} alt={post.author.name} data-ai-hint="author avatar" className="object-cover"/>
                     <AvatarFallback>{post.author.name?.substring(0,1) || 'A'}</AvatarFallback>
                   </Avatar>
                   <span>{post.author.name}</span>
@@ -306,7 +303,7 @@ export default function PostPage() {
                       <div className="flex items-start gap-3">
                         <Link href={comment.author.id ? `/profile/${comment.author.id}` : '#'}>
                           <Avatar className="h-9 w-9">
-                            <AvatarImage src={comment.author.imageUrl} alt={comment.author.name} data-ai-hint="commenter avatar"/>
+                            <AvatarImage src={comment.author.imageUrl} alt={comment.author.name} data-ai-hint="commenter avatar" className="object-cover"/>
                             <AvatarFallback>{comment.author.name?.substring(0,1) || 'U'}</AvatarFallback>
                           </Avatar>
                         </Link>

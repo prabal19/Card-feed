@@ -189,7 +189,7 @@ export default function NotificationsPage() {
                     <div className="flex items-start gap-3">
                       <Link href={`/profile/${notification.actingUser.id}`}>
                         <Avatar className="h-10 w-10 mt-1">
-                          <AvatarImage src={notification.actingUser.imageUrl} alt={notification.actingUser.name} data-ai-hint="user avatar" />
+                          <AvatarImage src={notification.actingUser.imageUrl} alt={notification.actingUser.name} data-ai-hint="user avatar" className="object-cover"/>
                           <AvatarFallback>{notification.actingUser.name.substring(0, 1)}</AvatarFallback>
                         </Avatar>
                       </Link>

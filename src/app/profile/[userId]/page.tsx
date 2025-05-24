@@ -39,7 +39,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function UserProfilePage() {
   const { userId } = useParams<{ userId: string }>();
-  const { user: authUser, login: updateAuthUser, isLoading: authLoading } = useAuth();
+  const { user: authUser, login: updateAuthUserContext, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -137,6 +137,9 @@ export default function UserProfilePage() {
           variant: "destructive",
         });
         event.target.value = ''; 
+        // Revert preview to original if file is too large
+        setImagePreview(profileUser?.profileImageUrl || null);
+        form.setValue('profileImageUrl', profileUser?.profileImageUrl || '', { shouldValidate: true, shouldDirty: true });
         return;
       }
       const reader = new FileReader();
@@ -171,7 +174,7 @@ export default function UserProfilePage() {
       if (updatedUser) {
         setProfileUser(updatedUser);
         if (authUser.id === updatedUser.id) { 
-            updateAuthUser(updatedUser); 
+            updateAuthUserContext(updatedUser); 
         }
         toast({ title: "Profile Updated", description: "Your profile has been successfully updated." });
         form.reset({ 
@@ -261,7 +264,7 @@ export default function UserProfilePage() {
         <Card className="max-w-3xl mx-auto shadow-xl my-8 bg-card">
           <CardHeader className="text-center border-b pb-6">
             <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-primary shadow-lg">
-              <AvatarImage src={imagePreview || `https://picsum.photos/seed/${profileUser.id}/200/200`} alt={`${profileUser.firstName} ${profileUser.lastName}`} data-ai-hint="user profile large"/>
+                <AvatarImage src={imagePreview || `https://placehold.co/200x200.png?text=${profileUser.firstName?.charAt(0) || 'U'}${profileUser.lastName?.charAt(0) || ''}`} alt={`${profileUser.firstName} ${profileUser.lastName}`} data-ai-hint="user profile large" className="object-cover"/>
               <AvatarFallback className="text-4xl">{profileUser.firstName?.charAt(0)}{profileUser.lastName?.charAt(0)}</AvatarFallback>
             </Avatar>
             <CardTitle className="text-3xl font-bold text-primary">{profileUser.firstName} {profileUser.lastName}</CardTitle>

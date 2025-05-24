@@ -9,7 +9,6 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
 import ImageExtension from '@tiptap/extension-image';
-import Placeholder from '@tiptap/extension-placeholder';
 import Heading from '@tiptap/extension-heading';
 import BulletList from '@tiptap/extension-bullet-list';
 import ListItem from '@tiptap/extension-list-item';
@@ -64,6 +63,7 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
   const [quickInsertButtonTop, setQuickInsertButtonTop] = useState<number | null>(null);
   const editorContentWrapperRef = useRef<HTMLDivElement>(null);
  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+ const [firstImageFromContentForPopup, setFirstImageFromContentForPopup] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -76,14 +76,7 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
         inline: false, // Ensures the image is a block element
         allowBase64: true, // Crucial for data URIs
         HTMLAttributes: {
-          class: 'w-full object-cover rounded-md my-4 transition-all duration-100 hover:border-2 hover:border-green-500', // Styling for block-like appearance with margin
-        },
-      }),
-      Placeholder.configure({
-        placeholder: ({ node }) => {
-          if (node.type.name === 'heading' && node.attrs.level === 1) return '';
-          if (node.type.name === 'paragraph' && node.content.size === 0) return 'Tell your story...';
-          return '';
+          class: 'w-full object-cover rounded-md my-4 transition-all hover:border-2 hover:border-green-500', // Styling for block-like appearance with margin
         },
       }),
        BulletList, ListItem, OrderedList, HardBreak, HorizontalRule, Strike,
@@ -223,6 +216,10 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
     if (!editor || editor.isEmpty) {
       toast({ title: "Content Required", variant: "destructive" }); return;
     }
+
+    const contentHTML = editor.getHTML();
+    const match = contentHTML.match(/<img[^>]+src\s*=\s*['"]([^'"]+)['"]/i);
+    setFirstImageFromContentForPopup(match ? match[1] : null);
     setIsPostSubmissionPopupOpen(true);
   };
 
@@ -407,7 +404,7 @@ const editorHasContent = editor && !editor.isEmpty;
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src={user.profileImageUrl || `https://picsum.photos/seed/${user.id}/36/36`} alt={user.firstName} data-ai-hint="user avatar"/>
+                        <AvatarImage src={user.profileImageUrl || `https://picsum.photos/seed/${user.id}/36/36`} alt={user.firstName} data-ai-hint="user avatar" className="object-cover"/>
                         <AvatarFallback>{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</AvatarFallback>
                       </Avatar>
                     </Button>
@@ -451,7 +448,7 @@ const editorHasContent = editor && !editor.isEmpty;
               data-quick-insert-button
               className="absolute flex items-center gap-1 z-20" 
               style={{ 
-                left: '-50px', 
+                left: isForAdmin ? '-30px' : '-60px', 
                 top: quickInsertButtonTop !== null ? `${quickInsertButtonTop}px` : '0px', 
               }}
             >
@@ -522,6 +519,7 @@ const editorHasContent = editor && !editor.isEmpty;
         categories={allCategories} 
         onSubmit={handleFinalSubmit}
         authorSummary={isForAdmin ? adminSelectedAuthor : (user ? {id: user.id, name: `${user.firstName} ${user.lastName}`, imageUrl: user.profileImageUrl} : null)}
+        initialPreviewImageFromContent={firstImageFromContentForPopup}
        />
       <AddImagePopup
         isOpen={isImagePopupOpen}

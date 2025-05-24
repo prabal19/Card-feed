@@ -4,7 +4,7 @@
 
 import clientPromise from '@/lib/mongodb';
 import type { User, UpdateUserProfileInput, CreateUserByAdminInput, UpdateUserByAdminInput } from '@/types';
-import type { GoogleAuthData, CompleteProfileFormData as ClientCompleteProfileFormData } from '@/contexts/auth-context'; // Renamed to avoid conflict
+import type { GoogleAuthData, CompleteProfileFormData as ClientCompleteProfileFormData } from '@/contexts/auth-context';
 import { ObjectId } from 'mongodb';
 import { revalidatePath } from 'next/cache';
 import { deletePostsByAuthorId } from './post.actions';
@@ -37,7 +37,7 @@ let mockUsers: User[] = [
     firstName: 'Demo',
     lastName: 'User',
     email: 'demo.user@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/demoUser/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=DU`,
     description: 'A passionate writer and reader on CardFeed.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -51,7 +51,7 @@ let mockUsers: User[] = [
     firstName: 'Ada',
     lastName: 'Lovelace',
     email: 'ada.lovelace@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/adalovelace/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=AL`,
     description: 'Pioneering computer scientist and writer of the first algorithm. Enjoys discussing technology on CardFeed.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -65,7 +65,7 @@ let mockUsers: User[] = [
     firstName: 'Marco',
     lastName: 'Polo Jr.',
     email: 'marco.polo@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/marcopolo/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=MP`,
     description: 'Avid explorer and storyteller, sharing tales from distant lands and travel experiences.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -79,7 +79,7 @@ let mockUsers: User[] = [
     firstName: 'Julia',
     lastName: 'Childish',
     email: 'julia.childish@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/juliachildish/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=JC`,
     description: 'Culinary enthusiast sharing recipes and food adventures on CardFeed.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -87,13 +87,14 @@ let mockUsers: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
+  // ... (other mock users updated similarly with placehold.co)
   {
     _id: 'author-marie',
     id: 'author-marie',
     firstName: 'Marie',
     lastName: 'Kondoversy',
     email: 'marie.kondoversy@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/mariekondoversy/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=MK`,
     description: 'Expert in minimalist living and decluttering, inspiring a simpler lifestyle.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -107,7 +108,7 @@ let mockUsers: User[] = [
     firstName: 'Elon',
     lastName: 'Tusk',
     email: 'elon.tusk@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/elontusk/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=ET`,
     description: 'Visionary entrepreneur discussing sustainable business and future technologies.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -115,13 +116,13 @@ let mockUsers: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
-  {
+    {
     _id: 'author-buddha',
     id: 'author-buddha',
     firstName: 'Buddha',
     lastName: 'Lee',
     email: 'buddha.lee@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/buddhalee/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=BL`,
     description: 'Spiritual guide sharing insights on mindfulness and health & wellness.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -135,7 +136,7 @@ let mockUsers: User[] = [
     firstName: 'Satoshi',
     lastName: 'Notamoto',
     email: 'satoshi.notamoto@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/satoshinotamoto/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=SN`,
     description: 'Cryptocurrency expert demystifying finance and blockchain technology.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -149,7 +150,7 @@ let mockUsers: User[] = [
     firstName: 'Prof.',
     lastName: 'Xavier',
     email: 'prof.xavier@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/profxavier/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=PX`,
     description: 'Educator exploring innovative teaching methods and gamification in learning.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -163,7 +164,7 @@ let mockUsers: User[] = [
     firstName: 'Banksy',
     lastName: 'Not',
     email: 'banksy.not@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/banksynot/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=BN`,
     description: 'Art enthusiast commenting on street art, culture, and its evolution.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -177,7 +178,7 @@ let mockUsers: User[] = [
     firstName: 'Dr.',
     lastName: 'Dreamwell',
     email: 'dr.dreamwell@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/drdreamwell/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=DD`,
     description: 'Scientist specializing in sleep research and its importance for well-being.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -191,7 +192,7 @@ let mockUsers: User[] = [
     firstName: 'Patty',
     lastName: 'Planter',
     email: 'patty.planter@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/pattyplanter/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=PP`,
     description: 'Gardening guru sharing tips for urban gardening and home decor.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -205,7 +206,7 @@ let mockUsers: User[] = [
     firstName: 'Henry',
     lastName: 'Ford II',
     email: 'henry.fordii@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/henryfordii/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=HF`,
     description: 'Automotive industry commentator discussing electric vehicles and future trends.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -219,7 +220,7 @@ let mockUsers: User[] = [
     firstName: 'Cesar',
     lastName: 'Millan Jr.',
     email: 'cesar.millanjr@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/cesarmillanjr/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=CM`,
     description: 'Pet behavior expert helping owners understand their canine companions.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -233,7 +234,7 @@ let mockUsers: User[] = [
     firstName: 'Ninja',
     lastName: 'Turtle',
     email: 'ninja.turtle@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/ninjaturtle/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=NT`,
     description: 'eSports analyst and commentator on the impact of gaming on sports.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -247,7 +248,7 @@ let mockUsers: User[] = [
     firstName: 'Pac',
     lastName: 'Man',
     email: 'pac.man@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/pacman/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=PM`,
     description: 'Retro gaming aficionado exploring classic video games and their revival.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -261,7 +262,7 @@ let mockUsers: User[] = [
     firstName: 'Martha',
     lastName: 'Stewart Jr.',
     email: 'martha.stewartjr@example.com',
-    profileImageUrl: 'https://picsum.photos/seed/marthastewartjr/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=MS`,
     description: 'DIY expert sharing budget-friendly home decor and lifestyle ideas.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -275,7 +276,7 @@ let mockUsers: User[] = [
     firstName: 'Admin',
     lastName: 'User',
     email: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    profileImageUrl: 'https://picsum.photos/seed/adminuser/200/200',
+    profileImageUrl: `https://placehold.co/200x200.png?text=AU`,
     description: 'CardFeed Administrator.',
     role: 'admin' as 'admin',
     authProvider: 'email' as 'email',
@@ -306,6 +307,15 @@ export async function getUserProfile(userIdOrEmail: string): Promise<User | null
       return mapUserToDto(userDoc);
     }
     
+    // Fallback to mockUsers if NEXT_PUBLIC_USE_MOCK_DATA is true, or similar logic
+    // For now, it's implicitly used if DB doesn't find user and ID matches a mock user.
+    // This part might be removed in a production scenario where mockUsers aren't directly queried.
+    const mockUserFromArray = mockUsers.find(u => u.id === userIdOrEmail || u.email === userIdOrEmail);
+    if (mockUserFromArray && (!userDoc || userDoc._id.toString() !== mockUserFromArray._id)) {
+        console.warn(`User ${userIdOrEmail} found in mock array, potentially not in DB or mismatch. Mock data used.`);
+        return { ...mockUserFromArray, password: undefined, isBlocked: mockUserFromArray.isBlocked || false };
+    }
+
 
     return null;
   } catch (error) {
@@ -333,14 +343,12 @@ export async function updateUserProfile(userId: string, data: UpdateUserProfileI
     const usersCollection = db.collection('users');
 
     if (!ObjectId.isValid(userId)) {
-      console.error('Invalid ObjectId for updateUserProfile:', userId);
-      // Attempt to find user by custom `id` field if `userId` is not an ObjectId
+      console.error('Invalid ObjectId for updateUserProfile with _id:', userId);
       const userByCustomId = await usersCollection.findOne({ id: userId });
       if (!userByCustomId) {
-         console.error(`User not found by custom ID ${userId} either.`);
+         console.error(`User not found by custom ID ${userId} either for updateUserProfile.`);
          return null;
       }
-      // If found by custom ID, use its actual _id for update
       userId = userByCustomId._id.toString(); 
     }
 
@@ -351,7 +359,9 @@ export async function updateUserProfile(userId: string, data: UpdateUserProfileI
     if (data.firstName !== undefined) updatePayload.firstName = data.firstName;
     if (data.lastName !== undefined) updatePayload.lastName = data.lastName;
     if (data.description !== undefined) updatePayload.description = data.description;
-    if (data.profileImageUrl !== undefined) updatePayload.profileImageUrl = data.profileImageUrl;
+    if (data.profileImageUrl !== undefined) {
+      updatePayload.profileImageUrl = data.profileImageUrl; // data.profileImageUrl can be a data URI
+    }
 
 
     const result = await usersCollection.findOneAndUpdate(
@@ -361,10 +371,11 @@ export async function updateUserProfile(userId: string, data: UpdateUserProfileI
     );
 
     if (result) {
-      revalidatePath(`/profile/${userId}`); 
+      const mappedUser = mapUserToDto(result);
+      revalidatePath(`/profile/${mappedUser.id}`); 
       revalidatePath('/'); 
       revalidatePath('/admin/users');
-      return mapUserToDto(result);
+      return mappedUser;
     }
     return null;
 
@@ -382,7 +393,7 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
 
         const existingUserByEmail = await usersCollection.findOne({ email: userData.email });
         if (existingUserByEmail) {
-            console.log(`User with email ${userData.email} already exists. Updating role/authProvider if necessary.`);
+            console.log(`User with email ${userData.email} already exists. Updating relevant fields if necessary.`);
             const updateOps: any = { $set: { updatedAt: new Date() }};
             let needsUpdate = false;
             if (userData.role && existingUserByEmail.role !== userData.role) {
@@ -394,11 +405,15 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
                  needsUpdate = true;
             }
              if (userData.password && existingUserByEmail.password !== userData.password) {
-                updateOps.$set.password = userData.password; 
+                updateOps.$set.password = userData.password; // Hash in production
                 needsUpdate = true;
             }
             if (userData.isBlocked !== undefined && existingUserByEmail.isBlocked !== userData.isBlocked) {
                 updateOps.$set.isBlocked = userData.isBlocked;
+                needsUpdate = true;
+            }
+            if (userData.profileImageUrl && existingUserByEmail.profileImageUrl !== userData.profileImageUrl) {
+                updateOps.$set.profileImageUrl = userData.profileImageUrl;
                 needsUpdate = true;
             }
 
@@ -414,11 +429,11 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
 
         const userDocumentForDb: any = {
             _id: newMongoId, 
-            id: userData.id || newUserIdString, // Use provided ID or new string _id
+            id: newUserIdString, 
             firstName: userData.firstName,
             lastName: userData.lastName,
             email: userData.email,
-            profileImageUrl: userData.profileImageUrl || `https://picsum.photos/seed/${userData.id || newUserIdString}/200/200`,
+            profileImageUrl: userData.profileImageUrl || `https://placehold.co/200x200.png?text=${userData.firstName?.charAt(0) || 'U'}${userData.lastName?.charAt(0) || ''}`,
             description: userData.description || '',
             role: userData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : (userData.role || 'user'),
             authProvider: userData.authProvider || (userData.googleId ? 'google' : 'email'),
@@ -428,7 +443,7 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
             updatedAt: new Date(),
         };
         if (userData.password) {
-            userDocumentForDb.password = userData.password; 
+            userDocumentForDb.password = userData.password; // Hash in production
         }
 
 
@@ -457,13 +472,12 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
     }
 }
 
-// Updated to use ClientCompleteProfileFormData which contains profileImageDataUri
 export async function findOrCreateUserFromGoogle({
-  googleAuthData,
-  profileFormData,
+  googleAuthData, // Contains original Google profileImageUrl and other Google details
+  profileFormData, // Contains names, desc, and potentially new profileImageDataUri from user upload
 }: {
-  googleAuthData: GoogleAuthData; // Contains original Google profileImageUrl
-  profileFormData: ClientCompleteProfileFormData; // Contains names, desc, and profileImageDataUri
+  googleAuthData: GoogleAuthData; 
+  profileFormData: ClientCompleteProfileFormData; 
 }): Promise<User | null> {
   try {
     const db = await getDb();
@@ -471,17 +485,18 @@ export async function findOrCreateUserFromGoogle({
 
     let userDoc = await usersCollection.findOne({ email: googleAuthData.email });
 
-    // Use the data URI from the form if provided, otherwise Google's original, otherwise placeholder
-    let profileImageUrlToSave = profileFormData.profileImageDataUri || 
-                                `https://picsum.photos/seed/${googleAuthData.email}-${Date.now()}/200/200`;
+    // Prioritize image uploaded by user in the dialog, then Google's, then fallback
+    const profileImageUrlToSave = profileFormData.profileImageDataUri || 
+                                  googleAuthData.profileImageUrl || 
+                                  `https://placehold.co/200x200.png?text=${profileFormData.firstName?.charAt(0) || googleAuthData.firstName?.charAt(0) || 'U'}${profileFormData.lastName?.charAt(0) || googleAuthData.lastName?.charAt(0) || ''}`;
 
 
     if (userDoc) {
       const updatePayload: Partial<Omit<User, 'id' | '_id' | 'email' | 'createdAt'>> & { updatedAt: Date, googleId?: string, authProvider?: User['authProvider'] } = {
-        firstName: profileFormData.firstName || userDoc.firstName,
+        firstName: profileFormData.firstName || userDoc.firstName, // Prefer form data if available
         lastName: profileFormData.lastName || userDoc.lastName,
         description: profileFormData.description || userDoc.description,
-        profileImageUrl: profileImageUrlToSave,
+        profileImageUrl: profileImageUrlToSave, // Always use the resolved image URL
         authProvider: 'google',
         isBlocked: userDoc.isBlocked || false, 
         updatedAt: new Date(),
@@ -489,7 +504,7 @@ export async function findOrCreateUserFromGoogle({
       if (googleAuthData.googleId && !userDoc.googleId) {
         updatePayload.googleId = googleAuthData.googleId;
       }
-       if (!userDoc.role) {
+       if (!userDoc.role) { // Set role if not already set
           updatePayload.role = googleAuthData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user';
       }
 
@@ -500,13 +515,15 @@ export async function findOrCreateUserFromGoogle({
         { returnDocument: 'after' }
       );
       if (result) {
-        revalidatePath(`/profile/${result.id}`);
+        const mappedUser = mapUserToDto(result);
+        revalidatePath(`/profile/${mappedUser.id}`);
         revalidatePath('/admin/users');
-        return mapUserToDto(result);
+        return mappedUser;
       }
       return null;
 
     } else {
+      // New user creation path
       const newMongoId = new ObjectId();
       const newUserIdString = newMongoId.toString();
 
@@ -515,10 +532,10 @@ export async function findOrCreateUserFromGoogle({
         id: newUserIdString, 
         googleId: googleAuthData.googleId,
         email: googleAuthData.email,
-        firstName: profileFormData.firstName,
-        lastName: profileFormData.lastName,
-        description: profileFormData.description,
-        profileImageUrl: profileImageUrlToSave,
+        firstName: profileFormData.firstName, // From dialog
+        lastName: profileFormData.lastName,   // From dialog
+        description: profileFormData.description, // From dialog
+        profileImageUrl: profileImageUrlToSave,   // Resolved image URL (could be data URI)
         role: googleAuthData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user',
         authProvider: 'google' as 'google',
         isBlocked: false, 
@@ -530,9 +547,10 @@ export async function findOrCreateUserFromGoogle({
       if (insertResult.insertedId) {
         const insertedDoc = await usersCollection.findOne({ _id: insertResult.insertedId });
         if (insertedDoc) {
-            revalidatePath(`/profile/${insertedDoc.id}`);
+            const mappedUser = mapUserToDto(insertedDoc);
+            revalidatePath(`/profile/${mappedUser.id}`);
             revalidatePath('/admin/users');
-            return mapUserToDto(insertedDoc);
+            return mappedUser;
         }
       }
       return null;
@@ -589,14 +607,15 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
 
 
         if (!userInDb) {
-             const { _id, password, ...restOfMockUser } = mockUser; // Exclude _id, password
+             const { _id, password, ...restOfMockUser } = mockUser; 
              
              const userToCreatePayload: Omit<User, '_id' | 'id'> & { id?: string, password?: string } = {
-                 ...restOfMockUser, // This includes firstName, lastName, email, etc.
+                 ...restOfMockUser, 
                  id: mockUser.id, 
                  role: mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : (mockUser.role || 'user'),
-                 authProvider: mockUser.authProvider || 'admin_created', 
+                 authProvider: mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'email' : (mockUser.authProvider || 'admin_created'), 
                  isBlocked: mockUser.isBlocked || false,
+                 profileImageUrl: mockUser.profileImageUrl || `https://placehold.co/200x200.png?text=${mockUser.firstName?.charAt(0) || 'U'}${mockUser.lastName?.charAt(0) || ''}`,
              };
              if (mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
                  userToCreatePayload.password = process.env.ADMIN_PASSWORD;
@@ -623,15 +642,12 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
                 updateNeeded = true;
             }
 
-            const expectedAuthProvider = mockUser.authProvider || (userInDb.googleId ? 'google' : (expectedRole === 'admin' ? 'email' : 'admin_created'));
+            const expectedAuthProvider = mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'email' : (mockUser.authProvider || (userInDb.googleId ? 'google' : 'admin_created'));
             if (userInDb.authProvider !== expectedAuthProvider) {
                 updateOps.$set.authProvider = expectedAuthProvider;
                 updateNeeded = true;
             }
-            if (userInDb.isBlocked === undefined) { 
-                updateOps.$set.isBlocked = mockUser.isBlocked || false;
-                updateNeeded = true;
-            } else if (userInDb.isBlocked !== (mockUser.isBlocked || false)) {
+            if (userInDb.isBlocked === undefined || userInDb.isBlocked !== (mockUser.isBlocked || false)) { 
                 updateOps.$set.isBlocked = mockUser.isBlocked || false;
                 updateNeeded = true;
             }
@@ -643,17 +659,16 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
                 updateOps.$set.createdAt = mockUser.createdAt || new Date();
                 updateNeeded = true;
             }
+            if (!userInDb.profileImageUrl && mockUser.profileImageUrl) {
+                updateOps.$set.profileImageUrl = mockUser.profileImageUrl;
+                updateNeeded = true;
+            }
             if (!userInDb.updatedAt || updateNeeded) {
                 updateOps.$set.updatedAt = new Date(); 
-                updateNeeded = true; // ensure updatedAt is set if other changes made
+                updateNeeded = true; 
             }
-            // Ensure mockUser's own id is preserved if that's the key, otherwise it should be _id.toString()
             if (userInDb.id !== mockUser.id && !ObjectId.isValid(mockUser.id)) {
                  updateOps.$set.id = mockUser.id;
-                 updateNeeded = true;
-            } else if (userInDb.id !== userInDb._id.toString() && ObjectId.isValid(mockUser.id) && mockUser.id === userInDb._id.toString()){
-                // if mockUser.id IS an ObjectId string, ensure userInDb.id matches it
-                 updateOps.$set.id = userInDb._id.toString();
                  updateNeeded = true;
             }
 
@@ -692,12 +707,12 @@ export async function createUserByAdmin(userData: CreateUserByAdminInput): Promi
     const newMongoId = new ObjectId();
     const newUserIdString = newMongoId.toString();
 
-    // profileImageUrl is now expected to be a data URI or null
-    const profileImageUrlToSave = userData.profileImageUrl || `https://picsum.photos/seed/${newUserIdString}/200/200`;
+    // Use provided profileImageUrl (data URI) or fallback to placehold.co
+    const profileImageUrlToSave = userData.profileImageUrl || `https://placehold.co/200x200.png?text=${userData.firstName?.charAt(0) || 'U'}${userData.lastName?.charAt(0) || ''}`;
 
     const userDocumentForDb: Omit<User, '_id' | 'id'> & { _id: ObjectId, id: string, password?: string } = {
       _id: newMongoId,
-      id: newUserIdString,
+      id: newUserIdString, 
       firstName: userData.firstName,
       lastName: userData.lastName,
       email: userData.email,
@@ -710,8 +725,9 @@ export async function createUserByAdmin(userData: CreateUserByAdminInput): Promi
       updatedAt: new Date(),
     };
 
+    // Password is now optional in CreateUserByAdminInput
     if (userData.password) {
-      userDocumentForDb.password = userData.password;
+      userDocumentForDb.password = userData.password; // Hash in production
     }
 
     const insertResult = await usersCollection.insertOne(userDocumentForDb as any);
@@ -755,8 +771,7 @@ export async function updateUserByAdmin(userId: string, data: UpdateUserByAdminI
     if (data.email !== undefined) updatePayload.email = data.email; 
     if (data.description !== undefined) updatePayload.description = data.description;
     
-    // profileImageUrl can be a data URI or an external URL
-    if (data.profileImageUrl !== undefined) { 
+    if (data.profileImageUrl !== undefined) { // profileImageUrl could be a data URI
         updatePayload.profileImageUrl = data.profileImageUrl;
     }
     
@@ -765,15 +780,17 @@ export async function updateUserByAdmin(userId: string, data: UpdateUserByAdminI
     
 
     const fieldsToUpdate = Object.keys(updatePayload).filter(key => key !== 'updatedAt');
-    if (fieldsToUpdate.length === 0 && !Object.prototype.hasOwnProperty.call(data, 'profileImageUrl')) { // Also check if profileImageUrl was explicitly passed even if empty
+    // If profileImageUrl is explicitly set (even if to empty string to clear it), consider it a change.
+    if (fieldsToUpdate.length === 0 && !Object.prototype.hasOwnProperty.call(data, 'profileImageUrl')) { 
       console.log("[updateUserByAdmin] No changed fields provided for update. Fetching current user.");
       const currentUserDoc = await usersCollection.findOne({ _id: new ObjectId(userId) });
       return currentUserDoc ? mapUserToDto(currentUserDoc) : null;
     }
     
+    console.log("[updateUserByAdmin] Update payload for MongoDB:", JSON.stringify(updatePayload, null, 2));
 
     const result = await usersCollection.findOneAndUpdate(
-      { _id: new ObjectId(userId) }, 
+      { _id: new ObjectId(userId) as any }, // Query with ObjectId
       { $set: updatePayload },
       { returnDocument: 'after' }
     );
@@ -807,7 +824,7 @@ export async function deleteUserByAdmin(userId: string): Promise<boolean> {
       return false;
     }
 
-    const userToDelete = await usersCollection.findOne({_id: new ObjectId(userId)});
+    const userToDelete = await usersCollection.findOne({_id: new ObjectId(userId) as any});
     if (!userToDelete) {
         console.warn(`User with _id ${userId} not found for deletion.`);
         return false; 
@@ -826,7 +843,7 @@ export async function deleteUserByAdmin(userId: string): Promise<boolean> {
     const notificationsDeleted = await deleteNotificationsRelatedToUser(userToDelete.id);
     console.log(`Notifications deletion result for user ${userToDelete.id}: ${notificationsDeleted}`);
     
-    const result = await usersCollection.deleteOne({ _id: new ObjectId(userId) });
+    const result = await usersCollection.deleteOne({ _id: new ObjectId(userId) as any });
 
     if (result.deletedCount && result.deletedCount > 0) {
       revalidatePath('/admin/users');
@@ -849,15 +866,16 @@ export async function verifyAdminCredentials(email: string, password: string): P
     let adminUser = await getUserProfile(email);
     if (!adminUser) {
       adminUser = await createUser({
-        id: 'admin-user-001',
-        email,
-        password,
-        firstName: 'Admin',
-        lastName: 'User',
-        role: 'admin',
-        description: 'CardFeed Administrator',
-        profileImageUrl: 'https://picsum.photos/seed/adminuser/200/200'
-      });
+              // id: 'admin-user-001', // createUser will assign ID based on MongoDB _id
+              email: process.env.NEXT_PUBLIC_ADMIN_EMAIL!,
+              firstName: 'Admin',
+              lastName: 'User',
+              role: 'admin',
+              authProvider: 'email',
+              password: process.env.ADMIN_PASSWORD, // Store password for admin if creating for the first time
+              description: 'CardFeed Administrator',
+              profileImageUrl: `https://placehold.co/200x200.png?text=A`
+            });
     }
    if (adminUser) {
   adminUser.role = 'admin';

@@ -99,25 +99,10 @@ body {
     --sidebar-ring: 180 80% 35%;
   }
 
-  /* * {
-    @apply border border-border;
-  } */
-
   body {
     @apply bg-background text-foreground;
   }
-  .ProseMirror img {
-    @apply transition-all duration-150 ease-in-out cursor-pointer;
-  }
 
-  .ProseMirror img:hover {
-    @apply ring-2 ring-[hsl(var(--primary))] ring-offset-2 ring-offset-background rounded-sm;
-  }
-
-  .ProseMirror img.ProseMirror-selectednode {
-    /* Use a darker shade of primary for the selected state, or make the ring thicker */
-    @apply ring-4 ring-[hsl(var(--primary))] ring-opacity-80 ring-offset-2 ring-offset-background rounded-sm;
-  }
     
 }
 

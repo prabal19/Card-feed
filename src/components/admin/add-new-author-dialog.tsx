@@ -32,7 +32,7 @@ const newAuthorSchema = z.object({
   lastName: z.string().min(1, "Last name is required."),
   email: z.string().email("Invalid email address."),
   description: z.string().max(500, "Description can be up to 500 characters.").optional().or(z.literal('')),
-  profileImageUrl: z.string().optional().or(z.literal('')), // Will hold data URI
+  profileImageUrl: z.string().optional().or(z.literal('')), // Will hold data URI or be empty
 });
 
 type FormValues = z.infer<typeof newAuthorSchema>;
@@ -47,7 +47,7 @@ export function AddNewAuthorDialog({ isOpen, onClose, onAuthorCreated }: AddNewA
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  // imageDataUri is already covered by form.watch('profileImageUrl') or form.getValues('profileImageUrl')
+  // imageDataUri is managed by form.setValue('profileImageUrl', dataUri)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(newAuthorSchema),
@@ -56,7 +56,7 @@ export function AddNewAuthorDialog({ isOpen, onClose, onAuthorCreated }: AddNewA
       lastName: '',
       email: '',
       description: '',
-      profileImageUrl: '',
+      profileImageUrl: '', // Initially empty, will store data URI if image uploaded
     },
   });
   
@@ -64,7 +64,6 @@ export function AddNewAuthorDialog({ isOpen, onClose, onAuthorCreated }: AddNewA
     if (!open) {
       form.reset(); 
       setImagePreview(null);
-      // No need to reset imageDataUri explicitly as it's part of form state
       onClose();
     }
   };
@@ -78,30 +77,33 @@ export function AddNewAuthorDialog({ isOpen, onClose, onAuthorCreated }: AddNewA
           description: `Please select an image smaller than ${MAX_FILE_SIZE / (1024 * 1024)}MB.`,
           variant: "destructive",
         });
-        event.target.value = ''; // Clear the input
+        event.target.value = ''; 
+        setImagePreview(null);
+        form.setValue('profileImageUrl', '', { shouldDirty: true });
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUri = reader.result as string;
         setImagePreview(dataUri);
-        form.setValue('profileImageUrl', dataUri, {shouldDirty: true});
+        form.setValue('profileImageUrl', dataUri, { shouldDirty: true });
       };
       reader.readAsDataURL(file);
     } else {
       setImagePreview(null);
-      form.setValue('profileImageUrl', '', {shouldDirty: true});
+      form.setValue('profileImageUrl', '', { shouldDirty: true });
     }
   };
 
   const handleFormSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsSubmitting(true);
     try {
+      // data.profileImageUrl already contains the data URI if an image was uploaded
       const payload: CreateUserByAdminInput = {
         ...data,
-        profileImageUrl: data.profileImageUrl, // This is now the data URI from the form state
+        profileImageUrl: data.profileImageUrl || undefined, // Ensure undefined if empty string
         role: 'user', 
-        // Password field removed, so no password is sent
+        // Password is not set here as per previous request
       };
       
       const newUser = await createUserByAdmin(payload);
@@ -113,8 +115,8 @@ export function AddNewAuthorDialog({ isOpen, onClose, onAuthorCreated }: AddNewA
           name: `${newUser.firstName} ${newUser.lastName}`,
           imageUrl: newUser.profileImageUrl,
         });
-        form.reset(); // Reset form after successful submission
-        setImagePreview(null); // Clear preview
+        form.reset(); 
+        setImagePreview(null); 
         onClose();
       } else {
         throw new Error("Failed to create author on the server.");
@@ -139,7 +141,7 @@ export function AddNewAuthorDialog({ isOpen, onClose, onAuthorCreated }: AddNewA
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-3 py-2 max-h-[70vh] overflow-y-auto pr-1">
            <div className="flex flex-col items-center space-y-2">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={imagePreview || undefined} alt="Profile preview" data-ai-hint="profile preview"/>
+              <AvatarImage src={imagePreview || undefined} alt="Profile preview" data-ai-hint="profile preview" className="object-cover"/>
               <AvatarFallback className="text-2xl">
                 {form.watch('firstName')?.charAt(0) || '?'}
                 {form.watch('lastName')?.charAt(0) || ''}

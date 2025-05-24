@@ -33,7 +33,7 @@ const editUserSchema = z.object({
   lastName: z.string().min(1, "Last name is required."),
   email: z.string().email("Invalid email address."),
   description: z.string().max(500, "Description must be 500 characters or less.").optional().or(z.literal('')),
-  profileImageUrl: z.string().optional().or(z.literal('')),
+  profileImageUrl: z.string().optional().or(z.literal('')), // Will hold data URI or existing URL
   role: z.enum(['user', 'admin']),
   isBlocked: z.boolean(),
 });
@@ -51,7 +51,6 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  // Removed localFile state as profileImageUrl will directly hold the data URI
 
   const form = useForm<FormValues>({
     resolver: zodResolver(editUserSchema),
@@ -73,13 +72,13 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
         lastName: user.lastName || '',
         email: user.email || '',
         description: user.description || '',
-        profileImageUrl: user.profileImageUrl || '',
+        profileImageUrl: user.profileImageUrl || '', // Original URL/DataURI
         role: user.role || 'user',
         isBlocked: user.isBlocked || false,
       });
-      setImagePreview(user.profileImageUrl || null);
+      setImagePreview(user.profileImageUrl || null); // Set initial preview
     } else if (!isOpen) {
-        form.reset({
+        form.reset({ // Reset on close
             firstName: '', lastName: '', email: '', description: '',
             profileImageUrl: '', role: 'user', isBlocked: false,
         });
@@ -97,18 +96,22 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
           description: `Please select an image smaller than ${MAX_FILE_SIZE / (1024 * 1024)}MB.`,
           variant: "destructive",
         });
-        event.target.value = ''; // Clear the input
+        event.target.value = ''; 
+        // Revert to original if oversized
+        setImagePreview(user?.profileImageUrl || null);
+        form.setValue('profileImageUrl', user?.profileImageUrl || '', {shouldValidate: true, shouldDirty: true });
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUri = reader.result as string;
-        setImagePreview(dataUri);
-        form.setValue('profileImageUrl', dataUri, { shouldValidate: true, shouldDirty: true });
+        setImagePreview(dataUri); // Update preview
+        form.setValue('profileImageUrl', dataUri, { shouldValidate: true, shouldDirty: true }); // Set form value to data URI
       };
       reader.readAsDataURL(file);
     } else {
-      setImagePreview(user?.profileImageUrl || null); 
+      // If selection is cancelled, revert to original
+      setImagePreview(user?.profileImageUrl || null);
       form.setValue('profileImageUrl', user?.profileImageUrl || '', {shouldValidate: true, shouldDirty: true });
     }
   };
@@ -130,6 +133,7 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
 
     setIsSubmitting(true);
     try {
+      // data.profileImageUrl now contains the data URI if a new image was uploaded, or the original URL/data URI
       const updatePayload: UpdateUserByAdminInput = {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -146,7 +150,7 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
       if (updatedUser) {
         toast({ title: "User Updated", description: `${updatedUser.firstName} ${updatedUser.lastName}'s profile has been updated.` });
         onUserUpdated(updatedUser);
-        onClose();
+        onClose(); // Close dialog on success
       } else {
         throw new Error("Failed to update user on the server.");
       }
@@ -170,13 +174,13 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
         <DialogHeader>
           <DialogTitle>Edit User: {form.watch('firstName') || user.firstName} {form.watch('lastName') || user.lastName}</DialogTitle>
           <DialogDescription>
-            Modify the details for this user. Click save when you're done.
+            Modify the details for this user. Click save when you're done. Max image size 5MB.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-2">
           <div className="flex flex-col items-center space-y-2">
             <Avatar className="h-24 w-24 mb-2">
-              <AvatarImage src={imagePreview || `https://picsum.photos/seed/${user.id}/200/200`} alt="Profile preview" data-ai-hint="profile preview"/>
+              <AvatarImage src={imagePreview || `https://placehold.co/200x200.png?text=${user.firstName?.charAt(0) || 'U'}${user.lastName?.charAt(0) || ''}`} alt="Profile preview" data-ai-hint="profile preview" className="object-cover"/>
               <AvatarFallback className="text-3xl">{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</AvatarFallback>
             </Avatar>
             <Label htmlFor="profileImageFile-edit" className="text-sm font-medium">Change Profile Picture</Label>

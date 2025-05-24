@@ -137,7 +137,7 @@ export function SelectExistingAuthorDialog({ isOpen, onClose, onAuthorSelected }
                   >
                     <RadioGroupItem value={author.id} id={`author-${author.id}`} className="shrink-0" />
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={author.profileImageUrl || `https://picsum.photos/seed/${author.id}/36/36`} alt={author.firstName} data-ai-hint="author avatar small"/>
+                      <AvatarImage src={author.profileImageUrl || `https://picsum.photos/seed/${author.id}/36/36`} alt={author.firstName} data-ai-hint="author avatar small" className="object-cover"/>
                       <AvatarFallback>{author.firstName?.charAt(0)}{author.lastName?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-grow">
