@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, UserCircle } from 'lucide-react';
+import { Loader2, Save, UserCircle, ShieldCheck, AlertTriangle, XOctagon } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,9 +22,11 @@ import { getUserProfile, updateUserProfile } from '@/app/actions/user.actions';
 import { getPostsByAuthorId } from '@/app/actions/post.actions';
 import { BlogCard } from '@/components/blog/blog-card';
 import { Separator } from '@/components/ui/separator';
-import { AppFooter } from '@/components/layout/footer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from '@/components/ui/badge';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const POSTS_PER_SECTION_LIMIT = 4; // Number of posts to show initially per status section
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
@@ -42,32 +44,40 @@ export default function UserProfilePage() {
   const { toast } = useToast();
 
   const [profileUser, setProfileUser] = useState<User | null>(null);
-  const [authorPosts, setAuthorPosts] = useState<Post[]>([]);
+  const [allAuthorPosts, setAllAuthorPosts] = useState<Post[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true); // Separate loading state for posts
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const [showAllAccepted, setShowAllAccepted] = useState(false);
+  const [showAllPending, setShowAllPending] = useState(false);
+  const [showAllRejected, setShowAllRejected] = useState(false);
 
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       firstName: '',
-      lastName: '',
+      lastName: '',  
       description: '',
       profileImageUrl: '',
     },
   });
 
+  const isOwnProfile = authUser?.id === userId;
+
   useEffect(() => {
-    async function fetchProfileData() {
+    async function fetchProfileAndPosts() {
       if (!userId) {
         setIsLoadingProfile(false);
         setIsLoadingPosts(false);
         return;
       }
+      
       setIsLoadingProfile(true);
-      setIsLoadingPosts(true); 
+      setIsLoadingPosts(true);
+      
       try {
         const fetchedUser = await getUserProfile(userId as string);
         if (fetchedUser) {
@@ -79,29 +89,43 @@ export default function UserProfilePage() {
             profileImageUrl: fetchedUser.profileImageUrl || '',
           });
           setImagePreview(fetchedUser.profileImageUrl || null);
-
-          const posts = await getPostsByAuthorId(userId as string);
-          setAuthorPosts(posts);
-          setIsLoadingPosts(false);
-
         } else {
           setProfileUser(null); 
-          setIsLoadingPosts(false);
           toast({ title: "Profile Not Found", description: "The user profile could not be loaded.", variant: "destructive" });
-          // router.push('/'); 
         }
       } catch (error) {
-        toast({ title: "Failed to load profile data", description: String(error), variant: "destructive" });
+        toast({ title: "Failed to load profile", description: String(error), variant: "destructive" });
         setProfileUser(null); 
-        setIsLoadingPosts(false);
       } finally {
         setIsLoadingProfile(false);
       }
+
+      // Fetch posts after profile user is determined (or if not found, skip)
+      if (userId) { // Ensure userId is valid before fetching posts
+        try {
+          // Fetch all statuses if it's the user's own profile, otherwise only accepted
+          const posts = await getPostsByAuthorId(userId as string, isOwnProfile); 
+          setAllAuthorPosts(posts);
+        } catch (error) {
+          toast({ title: "Failed to load posts", description: String(error), variant: "destructive" });
+          setAllAuthorPosts([]);
+        } finally {
+          setIsLoadingPosts(false);
+        }
+      } else {
+        setIsLoadingPosts(false); // No userId, so no posts to load
+      }
     }
+
     if (!authLoading) { 
-        fetchProfileData();
+        fetchProfileAndPosts();
     }
-  }, [userId, form, toast, router, authLoading]);
+  }, [userId, form, toast, router, authLoading, isOwnProfile]);
+
+  const acceptedPosts = useMemo(() => allAuthorPosts.filter(post => post.status === 'accepted'), [allAuthorPosts]);
+  const pendingPosts = useMemo(() => allAuthorPosts.filter(post => post.status === 'pending'), [allAuthorPosts]);
+  const rejectedPosts = useMemo(() => allAuthorPosts.filter(post => post.status === 'rejected'), [allAuthorPosts]);
+
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -112,7 +136,7 @@ export default function UserProfilePage() {
           description: `Please select an image smaller than ${MAX_FILE_SIZE / (1024 * 1024)}MB.`,
           variant: "destructive",
         });
-        event.target.value = ''; // Clear the input
+        event.target.value = ''; 
         return;
       }
       const reader = new FileReader();
@@ -123,7 +147,6 @@ export default function UserProfilePage() {
       };
       reader.readAsDataURL(file);
     } else {
-        // If file selection is cleared, revert to original or empty
         setImagePreview(profileUser?.profileImageUrl || null);
         form.setValue('profileImageUrl', profileUser?.profileImageUrl || '', { shouldValidate: true, shouldDirty: true });
     }
@@ -140,7 +163,7 @@ export default function UserProfilePage() {
         firstName: data.firstName, 
         lastName: data.lastName,
         description: data.description,
-        profileImageUrl: data.profileImageUrl, // This will be the data URI if a new image was selected
+        profileImageUrl: data.profileImageUrl,
     };
     
     try {
@@ -168,6 +191,40 @@ export default function UserProfilePage() {
     }
   };
 
+  const renderPostSection = (
+    posts: Post[], 
+    title: string, 
+    showAll: boolean, 
+    setShowAll: (show: boolean) => void, 
+    emptyMessage: string,
+    statusIcon?: React.ReactNode
+  ) => {
+    const displayedPosts = showAll ? posts : posts.slice(0, POSTS_PER_SECTION_LIMIT);
+    return (
+      <section>
+        <h3 className="text-xl font-semibold text-primary mb-4 flex items-center gap-2">
+          {statusIcon} {title} ({posts.length})
+        </h3>
+        {displayedPosts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {displayedPosts.map(post => (
+              <BlogCard key={post.id} post={post} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-center py-4">{emptyMessage}</p>
+        )}
+        {posts.length > POSTS_PER_SECTION_LIMIT && (
+          <div className="text-center mt-6">
+            <Button variant="outline" onClick={() => setShowAll(!showAll)}>
+              {showAll ? 'Show Less' : 'View All'}
+            </Button>
+          </div>
+        )}
+      </section>
+    );
+  };
+
   if (authLoading || isLoadingProfile) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -175,7 +232,6 @@ export default function UserProfilePage() {
         <main className="flex-grow container mx-auto px-4 py-12 pt-28 md:pt-8 flex items-center justify-center">
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
-        <AppFooter />
       </div>
     );
   }
@@ -192,7 +248,6 @@ export default function UserProfilePage() {
             <Link href="/">Go to Homepage</Link>
           </Button>
         </main>
-        <AppFooter />
       </div>
     );
   }
@@ -210,6 +265,7 @@ export default function UserProfilePage() {
               <AvatarFallback className="text-4xl">{profileUser.firstName?.charAt(0)}{profileUser.lastName?.charAt(0)}</AvatarFallback>
             </Avatar>
             <CardTitle className="text-3xl font-bold text-primary">{profileUser.firstName} {profileUser.lastName}</CardTitle>
+             {profileUser.isBlocked && <Badge variant="destructive" className="mt-2">This user is blocked</Badge>}
           </CardHeader>
           <CardContent className="p-6 md:p-8 text-card-foreground">
             {canEdit ? (
@@ -281,29 +337,73 @@ export default function UserProfilePage() {
 
         <Separator className="my-10" />
 
-        <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold text-primary mb-6 text-center">
-              Posts by {profileUser.firstName} {profileUser.lastName}
-            </h2>
-            {isLoadingPosts ? (
-                <div className="flex justify-center py-8">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                </div>
-            ) : authorPosts.length > 0 ? (
-                <div className="grid grid-cols-1 gap-6">
-                    {authorPosts.map(post => (
-                        <BlogCard key={post.id} post={post} />
-                    ))}
-                </div>
+        <div className="max-w-4xl mx-auto">
+            {isOwnProfile ? (
+                <>
+                    <h2 className="text-2xl font-bold text-primary mb-6 text-center">Your Posts</h2>
+                    <Tabs defaultValue="accepted" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 mb-6">
+                        <TabsTrigger value="accepted">Accepted ({acceptedPosts.length})</TabsTrigger>
+                        <TabsTrigger value="pending">Pending ({pendingPosts.length})</TabsTrigger>
+                        <TabsTrigger value="rejected">Rejected ({rejectedPosts.length})</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="accepted">
+                        {renderPostSection(
+                            acceptedPosts, 
+                            "Accepted Posts", 
+                            showAllAccepted, 
+                            setShowAllAccepted, 
+                            "You have no accepted posts yet.",
+                            <ShieldCheck className="h-5 w-5 text-green-500" />
+                        )}
+                        </TabsContent>
+                        <TabsContent value="pending">
+                        {renderPostSection(
+                            pendingPosts, 
+                            "Pending Review", 
+                            showAllPending, 
+                            setShowAllPending, 
+                            "You have no posts pending review.",
+                             <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                        )}
+                        </TabsContent>
+                        <TabsContent value="rejected">
+                        {renderPostSection(
+                            rejectedPosts, 
+                            "Rejected Posts", 
+                            showAllRejected, 
+                            setShowAllRejected, 
+                            "You have no rejected posts.",
+                            <XOctagon className="h-5 w-5 text-red-500" />
+                        )}
+                        </TabsContent>
+                    </Tabs>
+                </>
             ) : (
-                <p className="text-center text-muted-foreground py-8">
-                    {profileUser.firstName} hasn&apos;t posted anything yet.
-                </p>
+                 <>
+                    <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+                        Posts by {profileUser.firstName} {profileUser.lastName}
+                    </h2>
+                    {isLoadingPosts ? (
+                        <div className="flex justify-center py-8">
+                            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        </div>
+                    ) : acceptedPosts.length > 0 ? ( // For public view, only show accepted posts
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {acceptedPosts.map(post => (
+                                <BlogCard key={post.id} post={post} />
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-center text-muted-foreground py-8">
+                            {profileUser.firstName} hasn&apos;t posted anything publicly yet.
+                        </p>
+                    )}
+                </>
             )}
         </div>
-
       </main>
-      <AppFooter />
     </div>
   );
 }
+

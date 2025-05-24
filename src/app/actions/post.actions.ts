@@ -3,8 +3,8 @@
 'use server';
 
 import clientPromise from '@/lib/mongodb';
-import type { Post, Comment, UserSummary, User, CreatePostInput as CreatePostInputType } from '@/types'; // Updated CreatePostInput import
-import { ObjectId } from 'mongodb';
+import type { Post, Comment, UserSummary, CreatePostInput as CreatePostInputType } from '@/types'; // Updated CreatePostInput import
+import { Document, ObjectId , UpdateFilter, PullOperator } from 'mongodb';
 import { revalidatePath } from 'next/cache';
 import { categories as allStaticCategories } from '@/lib/data';
 import { seedUsers, getUserProfile } from './user.actions'; 
@@ -254,20 +254,19 @@ export async function likePost(postId: string, userId: string): Promise<Post | n
     const likedByArray = Array.isArray(postBeforeUpdate.likedBy) ? postBeforeUpdate.likedBy : [];
     const alreadyLiked = likedByArray.includes(userId);
 
-    let updateOperation;
+    let updateOperation: UpdateFilter<Document>;
 
-    if (alreadyLiked) {
-      updateOperation = {
-        $inc: { likes: -1 },
-        $pull: { likedBy: userId },
-      };
-    } else {
-      updateOperation = {
-        $inc: { likes: 1 },
-        $addToSet: { likedBy: userId },
-      };
-    }
-
+      if (alreadyLiked) {
+        updateOperation = {
+          $inc: { likes: -1 },
+          $pull: { likedBy: userId } as PullOperator<Document>['$pull'],
+        };
+      } else {
+        updateOperation = {
+          $inc: { likes: 1 },
+          $addToSet: { likedBy: userId },
+        };
+      }
     const result = await postsCollection.findOneAndUpdate(
       { _id: new ObjectId(postId) },
       updateOperation,
@@ -459,15 +458,20 @@ export async function getCategoriesWithCounts(): Promise<Array<{ category: strin
   }
 }
 
-export async function getPostsByAuthorId(authorId: string): Promise<Post[]> {
+export async function getPostsByAuthorId(authorId: string, forOwnProfileView: boolean = false): Promise<Post[]> {
   try {
     const db = await getDb();
     const postsCollection = db.collection('posts');
-    // Fetch only 'accepted' posts for public author profiles
-    const postsFromDb = await postsCollection.find({ "author.id": authorId, status: 'accepted' }).sort({ date: -1 }).toArray();
+    const query: any = { "author.id": authorId };
+    
+    if (!forOwnProfileView) {
+      query.status = 'accepted'; // Only fetch 'accepted' posts for public author profiles
+    }
+    // If forOwnProfileView is true, no status filter is applied, fetching all posts by the author.
+
+    const postsFromDb = await postsCollection.find(query).sort({ date: -1 }).toArray();
     return postsFromDb.map(mapPostToDto);
-  } catch (error)
-{
+  } catch (error) {
     console.error('Error fetching posts by author ID:', error);
     return [];
   }

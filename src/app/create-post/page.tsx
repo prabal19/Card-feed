@@ -309,16 +309,16 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
     }
   };
 
-  //   const handleEmbedInsert = (embedUrl: string) => {
-  //   if (!editor || !embedUrl.trim()) return;
+    const handleEmbedInsert = (embedUrl: string) => {
+    if (!editor || !embedUrl.trim()) return;
   
-  //   editor.chain().focus().insertContent(`<p>[Embed: <a href="${embedUrl}" target="_blank" rel="noopener noreferrer">${embedUrl}</a>]</p>`).run();
-  //   toast({title: "Embed Inserted", description: "A link to the embed source has been inserted.", variant: "default"});
-  //   editor.chain().focus().insertContent('<p></p>').run();
-  //   setIsEmbedPopupOpen(false);
-  //   setIsQuickInsertMenuOpen(false);
-  //   setShowQuickInsertButton(false);
-  // };
+    editor.chain().focus().insertContent(`<p>[Embed: <a href="${embedUrl}" target="_blank" rel="noopener noreferrer">${embedUrl}</a>]</p>`).run();
+    toast({title: "Embed Inserted", description: "A link to the embed source has been inserted.", variant: "default"});
+    editor.chain().focus().insertContent('<p></p>').run();
+    setIsEmbedPopupOpen(false);
+    setIsQuickInsertMenuOpen(false);
+    setShowQuickInsertButton(false);
+  };
 
 const isFullUser = (author: User | UserSummary): author is User =>
   "firstName" in author && "lastName" in author;
@@ -536,6 +536,11 @@ const editorHasContent = editor && !editor.isEmpty;
         isOpen={isLinkPopupOpen} 
         onClose={() => { setIsLinkPopupOpen(false); if(editor) editor.commands.focus();}} 
         onSubmit={handleLinkInsert} 
+      />
+      <AddEmbedPopup
+        isOpen={isEmbedPopupOpen}
+        onClose={() => { setIsEmbedPopupOpen(false); if (editor) editor.commands.focus(); }}
+        onSubmit={handleEmbedInsert}
       />
     </div>
   );
