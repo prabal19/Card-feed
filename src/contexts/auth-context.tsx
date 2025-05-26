@@ -106,9 +106,7 @@ useEffect(() => {
 
   const performLoginSteps = (loggedInUser: User) => {
     let finalUser = { ...loggedInUser };
-    if (!finalUser.profileImageUrl) {
-      finalUser.profileImageUrl = `https://placehold.co/200x200.png?text=${finalUser.firstName?.charAt(0) || 'U'}`; // Consistent placeholder
-    }
+   
     if (finalUser.description === undefined) {
       finalUser.description = ""; 
     }

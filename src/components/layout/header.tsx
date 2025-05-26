@@ -135,7 +135,7 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={user.profileImageUrl || `https://picsum.photos/seed/${user.id}/36/36`} alt={user.firstName} data-ai-hint="user avatar" className="object-cover"/>
+                      <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName}  className="object-cover"/>
                       <AvatarFallback>{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </Button>

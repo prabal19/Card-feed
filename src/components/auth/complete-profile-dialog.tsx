@@ -19,7 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2} from 'lucide-react';
+import { Loader2, UserCircle} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; 
 
@@ -59,15 +59,21 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
     if (isOpen && googleAuthData) {
       form.reset({
         firstName: '',
-        lastName: '',
+        lastName:  '',
         description: '',
       });
-      const initialImage = null;
-      setImagePreview(initialImage); // Preview with Google's image or null
-      setImageDataUri(undefined); // Reset imageDataUri, it will be set if user uploads a new file
+      // Use Google's image if available, otherwise null for fallback
+      const initialImage = null; 
+      setImagePreview(initialImage);
+      setImageDataUri(initialImage || undefined); // If Google provided one, use it initially
+    } else if (!isOpen) {
+      // Reset when dialog closes
+      setImagePreview(null);
+      setImageDataUri(undefined);
+      const fileInput = document.getElementById('profileImageFile-complete') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
     }
   }, [isOpen, googleAuthData, form]);
-
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -121,8 +127,7 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
   if (!googleAuthData) return null; // Should not happen if isOpen is true based on AuthContext logic
 
   
-  const watchedFirstName = form.watch('firstName');
-  const watchedLastName = form.watch('lastName');
+
 
     return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -140,11 +145,10 @@ export function CompleteProfileDialog({ isOpen, onClose, googleAuthData, onSubmi
                 src={imagePreview || undefined} 
                 alt="Profile preview" 
                 className="object-cover"
-                data-ai-hint="profile preview"
+                
               />
               <AvatarFallback className="text-3xl">
-                {(watchedFirstName || '').charAt(0)}
-                {(watchedLastName || '').charAt(0)}
+                <UserCircle className="h-16 w-16 text-muted-foreground" />
               </AvatarFallback>
             </Avatar>
             <Input

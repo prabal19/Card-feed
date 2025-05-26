@@ -1,3 +1,4 @@
+
 // src/components/blog/popular-categories.tsx
 'use client';
 
@@ -5,7 +6,7 @@ import type { Category } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BarChartBig, ChevronRight } from 'lucide-react';
+import { BarChartBig, ChevronRight, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon
 
 interface CategoryWithCount extends Category {
   postCount: number;
@@ -36,14 +37,16 @@ export function PopularCategories({ categories, count = 5 }: PopularCategoriesPr
                   href={`/category/${category.slug}`} 
                   className="flex items-center gap-3 p-2 rounded-md hover:bg-primary/10 transition-colors cursor-pointer group"
                 >
-                  <Image
-                    src={`https://picsum.photos/seed/${category.slug}/40/40`}
-                    alt={category.name}
-                    width={40}
-                    height={40}
-                    className="rounded-md object-cover"
-                    data-ai-hint={category.slug.replace(/-/g, ' ')}
-                  />
+                  <div className="relative w-10 h-10 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">
+                    <Image
+                      src={`https://placehold.co/40x40.png`} 
+                      alt={category.name}
+                      width={40}
+                      height={40}
+                      className="object-cover"
+                      data-ai-hint={category.hint || category.slug.replace(/-/g, ' ').substring(0, 20)}
+                    />
+                  </div>
                   <div className="flex-grow">
                     <span className="text-sm font-medium group-hover:text-primary transition-colors">{category.name}</span>
                     <span className="text-xs text-muted-foreground ml-1">({category.postCount})</span>
@@ -60,4 +63,3 @@ export function PopularCategories({ categories, count = 5 }: PopularCategoriesPr
     </Card>
   );
 }
-

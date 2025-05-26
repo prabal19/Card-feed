@@ -24,7 +24,7 @@ import { format, isSameDay } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Copy, ChevronLeft, ChevronRight, CalendarIcon, XCircle, Edit, ShieldX, Trash2, ShieldCheck, Loader2, Search } from 'lucide-react';
+import { Copy, ChevronLeft, ChevronRight, CalendarIcon, XCircle, Edit, ShieldX, Trash2, ShieldCheck, Loader2, Search ,UserCircle} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -320,8 +320,8 @@ export default function AdminUsersPage() {
                     <TableRow key={user.id} className={cn(user.isBlocked && "bg-destructive/10 opacity-70")}>
                       <TableCell>
                         <Avatar className="h-9 w-9">
-                          <AvatarImage src={user.profileImageUrl || `https://picsum.photos/seed/${user.id}/40/40`} alt={`${user.firstName} ${user.lastName}`} data-ai-hint="user avatar" className="object-cover"/>
-                          <AvatarFallback>{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</AvatarFallback>
+                          <AvatarImage src={user.profileImageUrl ||undefined} alt={`${user.firstName} ${user.lastName}`} data-ai-hint="user avatar" className="object-cover"/>
+                          <AvatarFallback><UserCircle className="h-full w-full text-muted-foreground p-1"/> </AvatarFallback>
                         </Avatar>
                       </TableCell>
                       <TableCell>

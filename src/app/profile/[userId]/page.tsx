@@ -166,7 +166,7 @@ export default function UserProfilePage() {
         firstName: data.firstName, 
         lastName: data.lastName,
         description: data.description,
-        profileImageUrl: data.profileImageUrl,
+        profileImageUrl: data.profileImageUrl || undefined ,
     };
     
     try {
@@ -264,7 +264,7 @@ export default function UserProfilePage() {
         <Card className="max-w-3xl mx-auto shadow-xl my-8 bg-card">
           <CardHeader className="text-center border-b pb-6">
             <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-primary shadow-lg">
-                <AvatarImage src={imagePreview || `https://placehold.co/200x200.png?text=${profileUser.firstName?.charAt(0) || 'U'}${profileUser.lastName?.charAt(0) || ''}`} alt={`${profileUser.firstName} ${profileUser.lastName}`} data-ai-hint="user profile large" className="object-cover"/>
+                <AvatarImage src={imagePreview || undefined}  className="object-cover"/>
               <AvatarFallback className="text-4xl">{profileUser.firstName?.charAt(0)}{profileUser.lastName?.charAt(0)}</AvatarFallback>
             </Avatar>
             <CardTitle className="text-3xl font-bold text-primary">{profileUser.firstName} {profileUser.lastName}</CardTitle>

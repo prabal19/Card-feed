@@ -11,9 +11,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { CalendarDays, Heart, Share2, MessageCircle, Send, User as UserIcon, Loader2, LinkIcon, Mail } from 'lucide-react';
+import { CalendarDays, Heart, Share2, Send, User as UserIcon, Loader2, LinkIcon, Mail ,Image as ImageIcon} from 'lucide-react';
 import type { Post, Comment as CommentType, UserSummary } from '@/types';
 import { getPostById, getPosts, likePost, sharePost, addComment } from '@/app/actions/post.actions';
 import { useAuth } from '@/contexts/auth-context';
@@ -62,12 +62,7 @@ export default function PostPage() {
           if (user && fetchedPost.likedBy) {
             setIsLiked(fetchedPost.likedBy.includes(user.id));
           }
-          // Optionally redirect if slug doesn't match for SEO, but ensure postId is the source of truth
-          const expectedSlug = generateSlug(fetchedPost.title);
-          if (params.slug !== expectedSlug) {
-            // router.replace(`/posts/${params.postId}/${expectedSlug}`, { scroll: false });
-            // For now, we won't enforce slug correctness to avoid loop if generation logic has slight diffs
-          }
+          
         } else {
           toast({ title: "Post not found", variant: "destructive" });
           router.push('/');
@@ -149,7 +144,7 @@ export default function PostPage() {
       return;
     }
     setIsSubmittingComment(true);
-    const authorSummary: UserSummary = { id: user.id, name: `${user.firstName} ${user.lastName}`, imageUrl: user.profileImageUrl || `https://picsum.photos/seed/${user.id}/32/32` };
+    const authorSummary: UserSummary = { id: user.id, name: `${user.firstName} ${user.lastName}`, imageUrl: user.profileImageUrl || undefined };
     const optimisticComment: CommentType = { id: `temp-${Date.now()}`, _id: undefined, postId: post.id, author: authorSummary, text: newCommentText, date: new Date().toISOString() };
     
     setPost(p => p ? { ...p, comments: [...(p.comments || []), optimisticComment] } : null);
@@ -211,7 +206,7 @@ export default function PostPage() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Post Content Area */}
           <article className="w-full lg:w-2/3 bg-card shadow-xl rounded-lg p-6 md:p-8">
-            {post.imageUrl && (
+            {post.imageUrl && post.imageUrl.startsWith('http') && (
               <div className="relative w-full h-80 md:h-[500px] mb-6 rounded-md overflow-hidden">
                 <Image
                   src={post.imageUrl}
@@ -219,9 +214,23 @@ export default function PostPage() {
                   layout="fill"
                   objectFit="cover"
                   priority
-                  data-ai-hint={`${post.category} blog post large`}
                 />
               </div>
+            )}
+             {post.imageUrl && post.imageUrl.startsWith('data:image') && (
+              <div className="relative w-full h-80 md:h-[500px] mb-6 rounded-md overflow-hidden">
+                 {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src={post.imageUrl}
+                    alt={post.title}
+                    className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            {!post.imageUrl && (
+                <div className="relative w-full h-80 md:h-[500px] mb-6 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                    <ImageIcon className="h-24 w-24 text-muted-foreground" />
+                </div>
             )}
             <header className="mb-6">
               <Badge variant="outline" className="mb-2 self-start bg-accent/10 text-black border-accent/50">{post.category.charAt(0).toUpperCase() + post.category.slice(1)}</Badge>
@@ -229,7 +238,7 @@ export default function PostPage() {
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Link href={authorLinkPath} className="flex items-center gap-2 hover:text-primary">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={post.author.imageUrl} alt={post.author.name} data-ai-hint="author avatar" className="object-cover"/>
+                    <AvatarImage src={post.author.imageUrl} alt={post.author.name}  className="object-cover"/>
                     <AvatarFallback>{post.author.name?.substring(0,1) || 'A'}</AvatarFallback>
                   </Avatar>
                   <span>{post.author.name}</span>
@@ -245,11 +254,7 @@ export default function PostPage() {
             <Separator className="my-6" />
             
             {/* Post Content - using whitespace-pre-wrap to respect newlines from plain text */}
-            <div className="prose max-w-none prose-p:text-foreground prose-headings:text-primary text-foreground" style={{ whiteSpace: 'pre-wrap' }}>
-              <div
-                dangerouslySetInnerHTML={{ __html: post.content }}
-              />
-            </div>
+            <div className="prose max-w-none prose-p:text-foreground prose-headings:text-primary text-foreground whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: post.content }} />
             
             <Separator className="my-8" />
 
@@ -303,7 +308,7 @@ export default function PostPage() {
                       <div className="flex items-start gap-3">
                         <Link href={comment.author.id ? `/profile/${comment.author.id}` : '#'}>
                           <Avatar className="h-9 w-9">
-                            <AvatarImage src={comment.author.imageUrl} alt={comment.author.name} data-ai-hint="commenter avatar" className="object-cover"/>
+                            <AvatarImage src={comment.author.imageUrl} alt={comment.author.name} className="object-cover"/>
                             <AvatarFallback>{comment.author.name?.substring(0,1) || 'U'}</AvatarFallback>
                           </Avatar>
                         </Link>

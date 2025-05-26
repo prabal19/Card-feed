@@ -48,12 +48,14 @@ export type Post = {
   shares: number;
   comments: Comment[];
   status?: 'accepted' | 'pending' | 'rejected'; 
+  updatedAt?: Date | string;
 };
 
 export type Category = {
   id: string;
   name: string;
   slug: string;
+  hint?: string;
 };
 
 export interface UpdateUserProfileInput {
@@ -78,13 +80,14 @@ export interface Notification {
   _id?: string;
   id: string;
   userId: string;
-  type: 'like' | 'comment';
+  type: 'like' | 'comment' |'post_status_change';
   postId: string;
   postSlug: string;
   postTitle: string;
   actingUser: UserSummary;
   isRead: boolean;
   createdAt: string;
+  newStatus?: 'accepted' | 'rejected'; 
 }
 
 export interface UserWithPostCount extends User {

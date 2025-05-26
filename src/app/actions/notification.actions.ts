@@ -17,20 +17,23 @@ function mapNotificationToDto(notificationDoc: any): Notification {
     ...notificationDoc,
     _id: notificationDoc._id?.toString(),
     id: notificationDoc._id?.toString(),
+    newStatus: notificationDoc.newStatus || undefined, // Ensure newStatus is mapped
   };
 }
 
 export async function createNotification(
   targetUserId: string,
-  type: 'like' | 'comment',
+  type: Notification['type'],
   postId: string,
   postSlug: string,
   postTitle: string,
-  actingUser: UserSummary
+  actingUser: UserSummary,
+  newStatus?: 'accepted' | 'rejected' // Add newStatus as an optional parameter
 ): Promise<Notification | null> {
   try {
     // Avoid notifying user for their own actions on their own posts (though post.actions should also check this)
-    if (targetUserId === actingUser.id) {
+    // For post_status_change, targetUserId (author) and actingUser.id (admin_system) will be different.
+    if (type !== 'post_status_change' && targetUserId === actingUser.id) {
       console.log(`Skipping notification: target user ${targetUserId} is the same as acting user ${actingUser.id}`);
       return null;
     }
@@ -49,10 +52,15 @@ export async function createNotification(
       createdAt: new Date().toISOString(),
     };
 
+    if (type === 'post_status_change' && newStatus) {
+      newNotificationData.newStatus = newStatus;
+    }
+
     const result = await notificationsCollection.insertOne(newNotificationData as any);
 
     if (result.insertedId) {
-      revalidatePath(`/notifications`); // General revalidation
+      revalidatePath(`/notifications`); // General revalidation for the target user
+      revalidatePath(`/profile/${targetUserId}`); // Also revalidate profile if needed
 
       const createdNotification = await notificationsCollection.findOne({ _id: result.insertedId });
       return createdNotification ? mapNotificationToDto(createdNotification) : null;

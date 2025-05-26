@@ -209,7 +209,7 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
     const authorSummary: UserSummary = {
       id: user.id,
       name: `${user.firstName} ${user.lastName}`,
-      imageUrl: user.profileImageUrl || `https://picsum.photos/seed/${user.id}/32/32`,
+      imageUrl: user.profileImageUrl || undefined ,
     };
 
     // Optimistic update
@@ -273,7 +273,7 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
           <div className="flex items-center gap-3 mb-2">
             <Link href={authorLinkPath} className="cursor-pointer">
                 <Avatar className="h-10 w-10">
-                <AvatarImage src={postData.author.imageUrl} alt={postData.author.name} data-ai-hint="author portrait" className="object-cover"/>
+                <AvatarImage src={postData.author.imageUrl} alt={postData.author.name}  className="object-cover"/>
                 <AvatarFallback>{postData.author?.name?.substring(0, 1) || 'A'}</AvatarFallback>
                 </Avatar>
             </Link>
@@ -293,15 +293,25 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
           </CardTitle>
         </CardHeader>
         
-        {postData.imageUrl && (
-          <Link href={postLinkPath} className="block relative w-full h-56 md:h-64">
+        {postData.imageUrl && postData.imageUrl.startsWith('http') && (
+          <Link href={postLinkPath} className="block relative w-full h-64 md:h-72">
             <Image
               src={postData.imageUrl}
               alt={postData.title}
               layout="fill"
               objectFit="cover"
-              className="rounded-md object-center px-10"
-              data-ai-hint={`${postData.category} blog post`}
+              data-ai-hint={postData.title.split(' ').slice(0,2).join(' ')}
+            />
+          </Link>
+        )}
+         {postData.imageUrl && postData.imageUrl.startsWith('data:image') && (
+          <Link href={postLinkPath} className="block relative w-full h-64 md:h-72">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={postData.imageUrl}
+              alt={postData.title}
+              className="w-full h-full object-cover"
+              data-ai-hint={postData.title.split(' ').slice(0,2).join(' ')}
             />
           </Link>
         )}
@@ -406,7 +416,7 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
                   <div key={comment.id || comment._id?.toString()} className="text-xs p-1.5 bg-muted/50 rounded">
                      <div className="flex items-center gap-1 mb-0.5">
                         <Avatar className="h-5 w-5">
-                            <AvatarImage src={comment.author.imageUrl} alt={comment.author.name} data-ai-hint="commenter avatar small" className="object-cover"/>
+                            <AvatarImage src={comment.author.imageUrl} alt={comment.author.name}  className="object-cover"/>
                             <AvatarFallback className="text-xs">{comment.author.name.substring(0,1)}</AvatarFallback>
                         </Avatar>
                         <p className="font-medium text-xs">{comment.author.name}:</p>

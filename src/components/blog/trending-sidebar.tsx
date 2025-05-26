@@ -1,3 +1,4 @@
+
 import type { Post } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Flame, UserCircle } from 'lucide-react'; 
@@ -29,25 +30,44 @@ export function TrendingSidebar({ trendingPosts }: TrendingSidebarProps) {
                 key={post.id} 
                 className="flex items-start gap-3 p-3 border-b border-border last:border-b-0 rounded-md hover:bg-muted/50 transition-colors"
               >
-                <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
-                  <Link href={`/posts/${post.id}/${generateSlug(post.title)}`} passHref>
-                    <Image 
-                      src={post.imageUrl} 
-                      alt={post.title} 
-                      layout="fill" 
-                      objectFit="cover" 
-                      data-ai-hint="trending post image"
-                      className="cursor-pointer"
-                    />
-                  </Link>
-                </div>
+                {post.imageUrl && post.imageUrl.startsWith('http') && (
+                  <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
+                    <Link href={`/posts/${post.id}/${generateSlug(post.title)}`} passHref>
+                      <Image 
+                        src={post.imageUrl} 
+                        alt={post.title} 
+                        layout="fill" 
+                        objectFit="cover" 
+                        className="cursor-pointer"
+                      />
+                    </Link>
+                  </div>
+                )}
+                {post.imageUrl && post.imageUrl.startsWith('data:image') && (
+                   <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
+                    <Link href={`/posts/${post.id}/${generateSlug(post.title)}`} passHref>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={post.imageUrl}
+                        alt={post.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        className="cursor-pointer"
+                      />
+                    </Link>
+                  </div>
+                )}
+                {!post.imageUrl && (
+                  <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">
+                     <UserCircle className="h-8 w-8 text-muted-foreground" /> {/* Placeholder icon */}
+                  </div>
+                )}
                 <div className="flex-grow">
                   <Link href={`/posts/${post.id}/${generateSlug(post.title)}`} className="text-sm font-semibold hover:text-primary transition-colors line-clamp-2">
                     {post.title}
                   </Link>
                   <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                     <Avatar className="h-5 w-5">
-                      <AvatarImage src={post.author.imageUrl} alt={post.author.name} data-ai-hint="author avatar small" />
+                      <AvatarImage src={post.author.imageUrl} alt={post.author.name} className="object-cover" />
                       <AvatarFallback>
                         {post.author.name ? post.author.name.charAt(0).toUpperCase() : <UserCircle className="h-4 w-4" />}
                       </AvatarFallback>

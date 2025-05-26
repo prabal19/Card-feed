@@ -1,3 +1,4 @@
+
 // src/app/notifications/page.tsx
 'use client';
 
@@ -6,10 +7,9 @@ import Link from 'next/link';
 import { AppHeader } from '@/components/layout/header';
 import { AppFooter } from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
-import { BellOff, CheckCheck, Trash2, Loader2, MessageSquare, Heart } from 'lucide-react';
+import { BellOff, CheckCheck, Trash2, Loader2, MessageSquare, Heart, ShieldCheck, ShieldX } from 'lucide-react';
 import type { Notification } from '@/types';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -51,9 +51,7 @@ export default function NotificationsPage() {
       if (user) {
         fetchNotifications();
       } else {
-        // Redirect or show message if user not logged in
         toast({ title: "Please log in to view notifications", variant: "destructive"});
-        // Consider redirecting: router.push('/login');
         setIsLoadingNotifications(false);
       }
     }
@@ -131,13 +129,55 @@ export default function NotificationsPage() {
             <BellOff className="h-24 w-24 mx-auto text-muted-foreground mb-4" />
             <h1 className="text-2xl font-semibold">Access Denied</h1>
             <p className="text-muted-foreground">Please log in to view your notifications.</p>
-            <Button asChild className="mt-6"><Link href="/login">Login</Link></Button>
+            <Button asChild className="mt-6"><Link href="/signup">Login</Link></Button>
         </main>
         <AppFooter />
       </div>
     );
   }
 
+  const renderNotificationContent = (notification: Notification) => {
+    switch (notification.type) {
+      case 'like':
+        return (
+          <>
+            <Link href={`/profile/${notification.actingUser.id}`} className="font-semibold hover:text-primary">{notification.actingUser.name}</Link>
+            {' liked your post: '}
+            <Link href={`/posts/${notification.postId}/${notification.postSlug}`} className="font-semibold hover:text-primary">
+              &quot;{notification.postTitle}&quot;
+            </Link>
+            <Heart className="inline h-3 w-3 ml-1 text-red-500" />
+          </>
+        );
+      case 'comment':
+        return (
+          <>
+            <Link href={`/profile/${notification.actingUser.id}`} className="font-semibold hover:text-primary">{notification.actingUser.name}</Link>
+            {' commented on your post: '}
+            <Link href={`/posts/${notification.postId}/${notification.postSlug}`} className="font-semibold hover:text-primary">
+              &quot;{notification.postTitle}&quot;
+            </Link>
+            <MessageSquare className="inline h-3 w-3 ml-1 text-blue-500" />
+          </>
+        );
+      case 'post_status_change':
+        const statusText = notification.newStatus === 'accepted' ? 'accepted' : 'rejected';
+        const StatusIcon = notification.newStatus === 'accepted' ? ShieldCheck : ShieldX;
+        const iconColor = notification.newStatus === 'accepted' ? "text-green-500" : "text-red-500";
+        return (
+          <>
+            <span className="font-semibold">{notification.actingUser.name}</span>
+            {` ${statusText} your post: `}
+            <Link href={`/posts/${notification.postId}/${notification.postSlug}`} className="font-semibold hover:text-primary">
+              &quot;{notification.postTitle}&quot;
+            </Link>
+            <StatusIcon className={cn("inline h-3 w-3 ml-1", iconColor)} />
+          </>
+        );
+      default:
+        return `Unknown notification type: ${notification.type}`;
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -174,7 +214,7 @@ export default function NotificationsPage() {
               <div className="text-center py-12 px-6">
                 <BellOff className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
                 <p className="text-xl text-muted-foreground">No notifications yet.</p>
-                <p className="text-sm text-muted-foreground mt-1">Likes and comments on your posts will appear here.</p>
+                <p className="text-sm text-muted-foreground mt-1">Interactions with your posts will appear here.</p>
               </div>
             ) : (
               <ul className="divide-y divide-border">
@@ -187,7 +227,7 @@ export default function NotificationsPage() {
                     )}
                   >
                     <div className="flex items-start gap-3">
-                      <Link href={`/profile/${notification.actingUser.id}`}>
+                      <Link href={notification.actingUser.id === 'admin_system' ? '#' : `/profile/${notification.actingUser.id}`}>
                         <Avatar className="h-10 w-10 mt-1">
                           <AvatarImage src={notification.actingUser.imageUrl} alt={notification.actingUser.name} data-ai-hint="user avatar" className="object-cover"/>
                           <AvatarFallback>{notification.actingUser.name.substring(0, 1)}</AvatarFallback>
@@ -195,16 +235,10 @@ export default function NotificationsPage() {
                       </Link>
                       <div className="flex-grow">
                         <p className="text-sm text-foreground">
-                          <Link href={`/profile/${notification.actingUser.id}`} className="font-semibold hover:text-primary">{notification.actingUser.name}</Link>
-                          {notification.type === 'like' ? ' liked your post: ' : ' commented on your post: '}
-                          <Link href={`/posts/${notification.postId}/${notification.postSlug}`} className="font-semibold hover:text-primary">
-                            &quot;{notification.postTitle}&quot;
-                          </Link>
+                          {renderNotificationContent(notification)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {new Date(notification.createdAt).toLocaleString()}
-                          {notification.type === 'like' && <Heart className="inline h-3 w-3 ml-1 text-red-500" />}
-                          {notification.type === 'comment' && <MessageSquare className="inline h-3 w-3 ml-1 text-blue-500" />}
                         </p>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 items-end sm:items-center shrink-0">

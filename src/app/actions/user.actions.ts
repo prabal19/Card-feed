@@ -22,6 +22,7 @@ function mapUserToDto(userDoc: any): User {
     _id: stringId, 
     id: userDoc.id || stringId, 
     password: undefined, 
+     profileImageUrl: userDoc.profileImageUrl || undefined,
     isBlocked: userDoc.isBlocked || false, 
     createdAt: userDoc.createdAt ? new Date(userDoc.createdAt).toISOString() : undefined,
     updatedAt: userDoc.updatedAt ? new Date(userDoc.updatedAt).toISOString() : undefined,
@@ -37,7 +38,7 @@ let mockUsers: User[] = [
     firstName: 'Demo',
     lastName: 'User',
     email: 'demo.user@example.com',
-    profileImageUrl: `https://placehold.co/200x200.png?text=DU`,
+    
     description: 'A passionate writer and reader on CardFeed.',
     role: 'user',
     authProvider: 'admin_created', 
@@ -276,7 +277,6 @@ let mockUsers: User[] = [
     firstName: 'Admin',
     lastName: 'User',
     email: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    profileImageUrl: `https://placehold.co/200x200.png?text=AU`,
     description: 'CardFeed Administrator.',
     role: 'admin' as 'admin',
     authProvider: 'email' as 'email',
@@ -306,16 +306,6 @@ export async function getUserProfile(userIdOrEmail: string): Promise<User | null
     if (userDoc) {
       return mapUserToDto(userDoc);
     }
-    
-    // Fallback to mockUsers if NEXT_PUBLIC_USE_MOCK_DATA is true, or similar logic
-    // For now, it's implicitly used if DB doesn't find user and ID matches a mock user.
-    // This part might be removed in a production scenario where mockUsers aren't directly queried.
-    const mockUserFromArray = mockUsers.find(u => u.id === userIdOrEmail || u.email === userIdOrEmail);
-    if (mockUserFromArray && (!userDoc || userDoc._id.toString() !== mockUserFromArray._id)) {
-        console.warn(`User ${userIdOrEmail} found in mock array, potentially not in DB or mismatch. Mock data used.`);
-        return { ...mockUserFromArray, password: undefined, isBlocked: mockUserFromArray.isBlocked || false };
-    }
-
 
     return null;
   } catch (error) {
@@ -360,7 +350,7 @@ export async function updateUserProfile(userId: string, data: UpdateUserProfileI
     if (data.lastName !== undefined) updatePayload.lastName = data.lastName;
     if (data.description !== undefined) updatePayload.description = data.description;
     if (data.profileImageUrl !== undefined) {
-      updatePayload.profileImageUrl = data.profileImageUrl; // data.profileImageUrl can be a data URI
+      updatePayload.profileImageUrl = data.profileImageUrl||undefined; // data.profileImageUrl can be a data URI
     }
 
 
@@ -412,8 +402,8 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
                 updateOps.$set.isBlocked = userData.isBlocked;
                 needsUpdate = true;
             }
-            if (userData.profileImageUrl && existingUserByEmail.profileImageUrl !== userData.profileImageUrl) {
-                updateOps.$set.profileImageUrl = userData.profileImageUrl;
+            if (userData.profileImageUrl !==undefined && existingUserByEmail.profileImageUrl !== userData.profileImageUrl) {
+                updateOps.$set.profileImageUrl = userData.profileImageUrl || undefined ;
                 needsUpdate = true;
             }
 
@@ -433,7 +423,7 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
             firstName: userData.firstName,
             lastName: userData.lastName,
             email: userData.email,
-            profileImageUrl: userData.profileImageUrl || `https://placehold.co/200x200.png?text=${userData.firstName?.charAt(0) || 'U'}${userData.lastName?.charAt(0) || ''}`,
+            profileImageUrl: userData.profileImageUrl || undefined,
             description: userData.description || '',
             role: userData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : (userData.role || 'user'),
             authProvider: userData.authProvider || (userData.googleId ? 'google' : 'email'),
@@ -486,9 +476,7 @@ export async function findOrCreateUserFromGoogle({
     let userDoc = await usersCollection.findOne({ email: googleAuthData.email });
 
     // Prioritize image uploaded by user in the dialog, then Google's, then fallback
-    const profileImageUrlToSave = profileFormData.profileImageDataUri || 
-                                  googleAuthData.profileImageUrl || 
-                                  `https://placehold.co/200x200.png?text=${profileFormData.firstName?.charAt(0) || googleAuthData.firstName?.charAt(0) || 'U'}${profileFormData.lastName?.charAt(0) || googleAuthData.lastName?.charAt(0) || ''}`;
+    const profileImageUrlToSave = profileFormData.profileImageUrl || undefined;
 
 
     if (userDoc) {
@@ -613,9 +601,9 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
                  ...restOfMockUser, 
                  id: mockUser.id, 
                  role: mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : (mockUser.role || 'user'),
-                 authProvider: mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'email' : (mockUser.authProvider || 'admin_created'), 
+                 authProvider: mockUser.authProvider || 'admin_created', 
                  isBlocked: mockUser.isBlocked || false,
-                 profileImageUrl: mockUser.profileImageUrl || `https://placehold.co/200x200.png?text=${mockUser.firstName?.charAt(0) || 'U'}${mockUser.lastName?.charAt(0) || ''}`,
+                 profileImageUrl: mockUser.profileImageUrl || undefined,
              };
              if (mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
                  userToCreatePayload.password = process.env.ADMIN_PASSWORD;
@@ -642,7 +630,7 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
                 updateNeeded = true;
             }
 
-            const expectedAuthProvider = mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'email' : (mockUser.authProvider || (userInDb.googleId ? 'google' : 'admin_created'));
+            const expectedAuthProvider = mockUser.authProvider || (userInDb.googleId ? 'google' : 'admin_created');
             if (userInDb.authProvider !== expectedAuthProvider) {
                 updateOps.$set.authProvider = expectedAuthProvider;
                 updateNeeded = true;
@@ -659,8 +647,8 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
                 updateOps.$set.createdAt = mockUser.createdAt || new Date();
                 updateNeeded = true;
             }
-            if (!userInDb.profileImageUrl && mockUser.profileImageUrl) {
-                updateOps.$set.profileImageUrl = mockUser.profileImageUrl;
+            if (mockUser.profileImageUrl !== undefined && userInDb.profileImageUrl !== mockUser.profileImageUrl) {
+                updateOps.$set.profileImageUrl = mockUser.profileImageUrl || undefined;
                 updateNeeded = true;
             }
             if (!userInDb.updatedAt || updateNeeded) {
@@ -708,7 +696,7 @@ export async function createUserByAdmin(userData: CreateUserByAdminInput): Promi
     const newUserIdString = newMongoId.toString();
 
     // Use provided profileImageUrl (data URI) or fallback to placehold.co
-    const profileImageUrlToSave = userData.profileImageUrl || `https://placehold.co/200x200.png?text=${userData.firstName?.charAt(0) || 'U'}${userData.lastName?.charAt(0) || ''}`;
+    const profileImageUrlToSave = userData.profileImageUrl || undefined;
 
     const userDocumentForDb: Omit<User, '_id' | 'id'> & { _id: ObjectId, id: string, password?: string } = {
       _id: newMongoId,
@@ -772,7 +760,7 @@ export async function updateUserByAdmin(userId: string, data: UpdateUserByAdminI
     if (data.description !== undefined) updatePayload.description = data.description;
     
     if (data.profileImageUrl !== undefined) { // profileImageUrl could be a data URI
-        updatePayload.profileImageUrl = data.profileImageUrl;
+        updatePayload.profileImageUrl = data.profileImageUrl || undefined;
     }
     
     if (data.role !== undefined) updatePayload.role = data.role;
@@ -874,7 +862,7 @@ export async function verifyAdminCredentials(email: string, password: string): P
               authProvider: 'email',
               password: process.env.ADMIN_PASSWORD, // Store password for admin if creating for the first time
               description: 'CardFeed Administrator',
-              profileImageUrl: `https://placehold.co/200x200.png?text=A`
+              profileImageUrl: undefined
             });
     }
    if (adminUser) {
