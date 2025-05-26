@@ -31,30 +31,29 @@ export function TrendingSidebar({ trendingPosts }: TrendingSidebarProps) {
                 className="flex items-start gap-3 p-3 border-b border-border last:border-b-0 rounded-md hover:bg-muted/50 transition-colors"
               >
                 {post.imageUrl && post.imageUrl.startsWith('http') && (
-                  <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
-                    <Link href={`/posts/${post.id}/${generateSlug(post.title)}`} passHref>
+                  <Link href={`/posts/${post.id}/${generateSlug(post.title)}`} passHref>
+                    <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
                       <Image 
                         src={post.imageUrl} 
                         alt={post.title} 
-                        layout="fill" 
-                        objectFit="cover" 
-                        className="cursor-pointer"
+                        fill 
+                        sizes="(max-width: 768px) 100vw, 300px"
+                        className="cursor-pointer object-cover"
                       />
-                    </Link>
-                  </div>
+                    </div>
+                  </Link>
                 )}
                 {post.imageUrl && post.imageUrl.startsWith('data:image') && (
-                   <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
+                   
                     <Link href={`/posts/${post.id}/${generateSlug(post.title)}`} passHref>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
                       <img
                         src={post.imageUrl}
                         alt={post.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        className="cursor-pointer"
+                        className="cursor-pointer w-full h-full object-cover"
                       />
+                      </div>
                     </Link>
-                  </div>
                 )}
                 {!post.imageUrl && (
                   <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">

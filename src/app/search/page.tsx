@@ -12,7 +12,6 @@ import { Loader2, SearchX } from 'lucide-react';
 import type { Post, User } from '@/types';
 import { searchPostsByTitleOrContent } from '@/app/actions/post.actions';
 import { searchUsersByName } from '@/app/actions/user.actions';
-import { AppFooter } from '@/components/layout/footer';
 
 function SearchResultsContent() {
   const searchParams = useSearchParams();

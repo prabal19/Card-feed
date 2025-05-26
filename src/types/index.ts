@@ -56,6 +56,7 @@ export type Category = {
   name: string;
   slug: string;
   hint?: string;
+  src?:string;
 };
 
 export interface UpdateUserProfileInput {

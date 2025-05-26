@@ -39,13 +39,14 @@ export function PopularCategories({ categories, count = 5 }: PopularCategoriesPr
                 >
                   <div className="relative w-10 h-10 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">
                     <Image
-                      src={`https://placehold.co/40x40.png`} 
+                      src={category.src || 'https://placehold.co/40x40.png'}
                       alt={category.name}
-                      width={40}
-                      height={40}
+                      fill
+                      sizes="40px"
                       className="object-cover"
                       data-ai-hint={category.hint || category.slug.replace(/-/g, ' ').substring(0, 20)}
                     />
+
                   </div>
                   <div className="flex-grow">
                     <span className="text-sm font-medium group-hover:text-primary transition-colors">{category.name}</span>

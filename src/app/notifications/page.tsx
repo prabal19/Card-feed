@@ -5,7 +5,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AppHeader } from '@/components/layout/header';
-import { AppFooter } from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -116,7 +115,6 @@ export default function NotificationsPage() {
         <main className="flex-grow container mx-auto px-4 py-12 pt-28 md:pt-8 flex items-center justify-center">
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
-        <AppFooter />
       </div>
     );
   }
@@ -131,7 +129,6 @@ export default function NotificationsPage() {
             <p className="text-muted-foreground">Please log in to view your notifications.</p>
             <Button asChild className="mt-6"><Link href="/signup">Login</Link></Button>
         </main>
-        <AppFooter />
       </div>
     );
   }
@@ -273,7 +270,6 @@ export default function NotificationsPage() {
           </CardContent>
         </Card>
       </main>
-      <AppFooter />
     </div>
   );
 }

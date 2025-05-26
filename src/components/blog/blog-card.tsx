@@ -298,8 +298,9 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
             <Image
               src={postData.imageUrl}
               alt={postData.title}
-              layout="fill"
-              objectFit="cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
               data-ai-hint={postData.title.split(' ').slice(0,2).join(' ')}
             />
           </Link>
@@ -310,7 +311,7 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
             <img
               src={postData.imageUrl}
               alt={postData.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover px-4"
               data-ai-hint={postData.title.split(' ').slice(0,2).join(' ')}
             />
           </Link>
