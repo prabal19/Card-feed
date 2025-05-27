@@ -15,7 +15,7 @@ export function TrendingSidebar({ trendingPosts }: TrendingSidebarProps) {
   const topTrending = trendingPosts.slice(0, 5);
 
   return (
-    <Card className="shadow-md">
+    <Card className="rounded-3xl">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Flame className="h-5 w-5 text-primary" />

@@ -8,33 +8,33 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 96%;
-    --foreground: 240 10% 3.9%;
+    --background: 0 0% 98%; /* Very Light Gray / Off-White #FAFAFA */
+    --foreground: 240 10% 3.9%; /* Dark Gray */
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card: 0 0% 100%; /* White #FFFFFF */
+    --card-foreground: 240 10% 3.9%; /* Dark Gray */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 240 10% 3.9%; /* Dark Gray */
 
-    --primary: 180 100% 25.1%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 9%; /* Very Dark Gray (near black) */
+    --primary-foreground: 0 0% 98%; /* Off-white (for contrast with dark primary) */
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 240 4.8% 95.9%; /* Lighter Gray #F4F4F5 */
+    --secondary-foreground: 240 5.9% 10%; /* Dark Gray */
 
-    --muted: 240 4.8% 92%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 240 4.8% 94%; /* Lighter Muted Gray #F0F0F1 */
+    --muted-foreground: 240 3.8% 40%; /* Darker Muted Text #5C5C5E */
 
-    --accent: 180 100% 25.1%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 9%; /* Very Dark Gray (match primary) */
+    --accent-foreground: 0 0% 98%; /* Off-white (match primary-foreground) */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 180 100% 25.1%;
+    --border: 240 5.9% 88%; /* Slightly Darker Border #DFDFE0 */
+    --input: 240 5.9% 88%; /* Match Border */
+    --ring: 0 0% 9%; /* Very Dark Gray (match primary for focus rings) */
 
     --radius: 0.5rem;
 
@@ -44,44 +44,45 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    --sidebar-background: 0 0% 100%;
+    /* Sidebar specific colors */
+    --sidebar-background: 0 0% 100%; /* White for sidebars */
     --sidebar-foreground: 240 10% 3.9%;
-    --sidebar-primary: 180 100% 25.1%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 180 100% 25.1%;
-    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 9%; /* Very Dark Gray (match primary) */
+    --sidebar-primary-foreground: 0 0% 98%; /* Off-white */
+    --sidebar-accent: 0 0% 9%; /* Very Dark Gray (match primary) */
+    --sidebar-accent-foreground: 0 0% 98%; /* Off-white */
     --sidebar-border: 240 5.9% 90%;
-    --sidebar-ring: 180 100% 25.1%;
+    --sidebar-ring: 0 0% 9%; /* Very Dark Gray (match primary) */
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 240 10% 3.9%; /* Dark */
+    --foreground: 0 0% 98%; /* Light */
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 240 10% 4.9%; /* Slightly Lighter Dark for Cards #0F0F12 */
+    --card-foreground: 0 0% 98%; /* Light */
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 240 10% 4.9%; /* Match Card */
+    --popover-foreground: 0 0% 98%; /* Light */
 
-    --primary: 180 80% 35%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 0 0% 80%; /* Light Gray for dark mode primary */
+    --primary-foreground: 0 0% 9%; /* Very Dark Gray (for contrast with light primary) */
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 3.7% 15.9%; /* Dark Muted */
+    --secondary-foreground: 0 0% 98%; /* Light */
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 240 3.7% 12.9%; /* Darker Muted #1C1C21 */
+    --muted-foreground: 240 5% 58%; /* Lighter Muted Text #8C8C96 */
 
-    --accent: 180 80% 35%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 0 0% 80%; /* Light Gray (match dark mode primary) */
+    --accent-foreground: 0 0% 9%; /* Very Dark Gray (match dark mode primary-foreground) */
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 180 80% 35%;
+    --border: 240 3.7% 10%; /* Darker Border #1A1A1C */
+    --input: 240 3.7% 10%; /* Match Border */
+    --ring: 0 0% 80%; /* Light Gray (match dark mode primary for focus rings) */
 
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -89,14 +90,15 @@ body {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
+    /* Sidebar specific colors for dark mode */
     --sidebar-background: 240 3.7% 10%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 180 80% 35%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 180 80% 35%;
-    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 80%; /* Light Gray */
+    --sidebar-primary-foreground: 0 0% 9%; /* Very Dark Gray */
+    --sidebar-accent: 0 0% 80%; /* Light Gray */
+    --sidebar-accent-foreground: 0 0% 9%; /* Very Dark Gray */
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 180 80% 35%;
+    --sidebar-ring: 0 0% 80%; /* Light Gray */
   }
 
   body {

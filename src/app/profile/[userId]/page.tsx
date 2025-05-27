@@ -261,7 +261,7 @@ export default function UserProfilePage() {
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <main className="flex-grow container mx-auto px-4 py-12 pt-28 md:pt-8">
-        <Card className="max-w-3xl mx-auto shadow-xl my-8 bg-card">
+        <Card className="max-w-3xl mx-auto rounded-3xl my-8 bg-card">
           <CardHeader className="text-center border-b pb-6">
             <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-primary shadow-lg">
                 <AvatarImage src={imagePreview || undefined}  className="object-cover"/>

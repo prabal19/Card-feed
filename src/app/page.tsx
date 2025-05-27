@@ -103,7 +103,7 @@ export default function HomePage() {
           {/* Left Sidebar: Create Post & Popular Categories (PopularCategories hidden on <lg screens, moved to drawer) */}
           <aside className="w-full lg:w-1/4 space-y-6 order-1 lg:sticky lg:top-[calc(theme(spacing.4)_+_65px_+_env(safe-area-inset-top))] h-fit"> {/* Adjusted sticky top */}
             <Link href="/create-post" passHref>
-              <Button className="w-full">
+              <Button className="w-full rounded-3xl">
                 <PlusCircle className="mr-2 h-5 w-5" /> Create Post
               </Button>
             </Link>

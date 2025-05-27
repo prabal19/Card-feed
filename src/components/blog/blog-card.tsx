@@ -268,7 +268,7 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
 
   return (
     <>
-      <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col h-full bg-card">
+      <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col h-full bg-card rounded-3xl">
         <CardHeader className="p-4">
           <div className="flex items-center gap-3 mb-2">
             <Link href={authorLinkPath} className="cursor-pointer">
@@ -295,23 +295,21 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
         
         {postData.imageUrl && postData.imageUrl.startsWith('http') && (
           <Link href={postLinkPath} className="block relative w-full h-64 md:h-72">
-            <Image
+            <img
               src={postData.imageUrl}
               alt={postData.title}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
+              className="w-full h-full object-cover px-4 rounded-xl"
               data-ai-hint={postData.title.split(' ').slice(0,2).join(' ')}
             />
           </Link>
         )}
          {postData.imageUrl && postData.imageUrl.startsWith('data:image') && (
-          <Link href={postLinkPath} className="block relative w-full h-64 md:h-72">
+          <Link href={postLinkPath} className="block relative px-4 w-full h-64 md:h-72">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={postData.imageUrl}
               alt={postData.title}
-              className="w-full h-full object-cover px-4"
+              className="w-full h-full object-cover rounded-xl"
               data-ai-hint={postData.title.split(' ').slice(0,2).join(' ')}
             />
           </Link>

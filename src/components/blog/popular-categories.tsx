@@ -21,7 +21,7 @@ export function PopularCategories({ categories, count = 5 }: PopularCategoriesPr
   const displayedCategories = categories.slice(0, count);
 
   return (
-    <Card className="shadow-md">
+    <Card className=" rounded-3xl">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <BarChartBig className="h-5 w-5 text-primary" />

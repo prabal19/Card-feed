@@ -88,7 +88,7 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
             <Input
               type="search"
               placeholder="Search articles, topics, or authors..."
-              className="pl-10 w-full"
+              className="pl-10 w-full rounded-xl bg-white"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -134,8 +134,8 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName}  className="object-cover"/>
+                    <Avatar className="h-9 w-9 hover:text-black">
+                      <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName}  className=" object-cover"/>
                       <AvatarFallback>{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </Button>
