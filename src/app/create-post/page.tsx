@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense, useRef }  from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -30,11 +30,11 @@ import { categories as allCategories } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { AddEmbedPopup } from '@/components/create-post/add-embed-popup';
 import { Loader2, Newspaper, Bell, Check, Plus, X, ImagePlus as ImagePlusIcon, Link as LinkIcon, User as UserIcon, LogOut, Minus, Code2 } from 'lucide-react';
-import { createPost, type CreatePostActionInput as CreatePostInput } from '@/app/actions/post.actions';
+import { createPost, type CreatePostActionInput as CreatePostInput , getPostById, updatePostAndSetPending} from '@/app/actions/post.actions';
 import { useAuth } from '@/contexts/auth-context';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn, generateSlug } from '@/lib/utils';
-import type { User, UserSummary } from '@/types';
+import type { User, UserSummary,Post,UpdatePostData } from '@/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +49,7 @@ import { getUnreadNotificationCount } from '@/app/actions/notification.actions';
 export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = null }: { isForAdmin?: boolean, adminSelectedAuthor?: UserSummary | null }) {
   const router = useRouter();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const { user, isLoading: authIsLoading , logout} = useAuth();
   const [isEmbedPopupOpen, setIsEmbedPopupOpen] = useState(false);
   const [title, setTitle] = useState('');
@@ -64,6 +65,9 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
   const editorContentWrapperRef = useRef<HTMLDivElement>(null);
  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
  const [firstImageFromContentForPopup, setFirstImageFromContentForPopup] = useState<string | null>(null);
+  const [currentEditingPostId, setCurrentEditingPostId] = useState<string | null>(null);
+  const [initialPostDataForEdit, setInitialPostDataForEdit] = useState<Post | null>(null);
+  const [isLoadingPostForEdit, setIsLoadingPostForEdit] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -164,7 +168,7 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
   }, []);
 
   useEffect(() => {
-    if (!authIsLoading && !user && !isForAdmin) {
+    if (!authIsLoading && !user && !isForAdmin && !currentEditingPostId) {
       toast({ title: "Authentication Required", description: "You need to be logged in to create a post.", variant: "destructive" });
       router.push('/signup');
     }
@@ -173,7 +177,7 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
         if (!adminSelectedAuthor) router.push('/admin/add-blog'); // Stay on page if author not selected yet by admin
         else router.push('/admin'); // Redirect if admin context is generally missing
     }
-  }, [user, authIsLoading, router, toast, isForAdmin, adminSelectedAuthor]);
+  }, [user, authIsLoading, router, toast, isForAdmin, adminSelectedAuthor, currentEditingPostId]);
 
   useEffect(() => {
     const saveDraft = () => {
@@ -202,6 +206,59 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
     }
   }, [user, isForAdmin]);
 
+  useEffect(() => {
+    const editPostIdQuery = searchParams.get('editPostId');
+    if (editPostIdQuery) {
+      setCurrentEditingPostId(editPostIdQuery);
+      setIsLoadingPostForEdit(true);
+      const fetchPostForEdit = async () => {
+        try {
+          const postToEdit = await getPostById(editPostIdQuery);
+          if (postToEdit) {
+            if (user && (user.id === postToEdit.author.id || isForAdmin)) {
+              setTitle(postToEdit.title);
+              if(titleTextareaRef.current) {
+                titleTextareaRef.current.value = postToEdit.title; // Set value directly for textarea
+                titleTextareaRef.current.style.height = 'auto';
+                titleTextareaRef.current.style.height = `${titleTextareaRef.current.scrollHeight}px`;
+              }
+              editor?.commands.setContent(postToEdit.content);
+              setInitialPostDataForEdit(postToEdit);
+              const contentHTML = postToEdit.content;
+              const match = contentHTML.match(/<img[^>]+src\s*=\s*['"]([^'"]+)['"]/i);
+              setFirstImageFromContentForPopup(match ? match[1] : postToEdit.imageUrl || null);
+
+            } else {
+              toast({ title: "Unauthorized", description: "You are not authorized to edit this post.", variant: "destructive" });
+              router.push('/');
+            }
+          } else {
+            toast({ title: "Post Not Found", description: "The post you are trying to edit could not be found.", variant: "destructive" });
+            router.push('/');
+          }
+        } catch (error) {
+          toast({ title: "Error Loading Post", description: "Could not load the post for editing.", variant: "destructive" });
+          router.push('/');
+        } finally {
+          setIsLoadingPostForEdit(false);
+        }
+      };
+      if (user || isForAdmin) { // Only fetch if user is loaded or if it's admin context
+          fetchPostForEdit();
+      }
+    } else {
+        // Reset state if not in edit mode
+        setTitle('');
+        editor?.commands.setContent('');
+        setCurrentEditingPostId(null);
+        setInitialPostDataForEdit(null);
+        setFirstImageFromContentForPopup(null);
+        if(titleTextareaRef.current) {
+            titleTextareaRef.current.value = '';
+            titleTextareaRef.current.style.height = 'auto';
+        }
+    }
+  }, [searchParams, editor, user, isForAdmin, router, toast]);
 
   const handlePublishClick = () => {
     const authorToSubmitId = isForAdmin ? adminSelectedAuthor?.id : user?.id;
@@ -217,47 +274,80 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
       toast({ title: "Content Required", variant: "destructive" }); return;
     }
 
-    const contentHTML = editor.getHTML();
-    const match = contentHTML.match(/<img[^>]+src\s*=\s*['"]([^'"]+)['"]/i);
-    setFirstImageFromContentForPopup(match ? match[1] : null);
+    if (!firstImageFromContentForPopup && !initialPostDataForEdit?.imageUrl) {
+        const contentHTML = editor.getHTML();
+        const match = contentHTML.match(/<img[^>]+src\s*=\s*['"]([^'"]+)['"]/i);
+        setFirstImageFromContentForPopup(match ? match[1] : null);
+    } else if (initialPostDataForEdit?.imageUrl && !firstImageFromContentForPopup) {
+        setFirstImageFromContentForPopup(initialPostDataForEdit.imageUrl);
+    }
+
+
     setIsPostSubmissionPopupOpen(true);
   };
 
-  const handleFinalSubmit = async (formData: {
-    coverImageDataUri: string; categorySlug: string, excerpt: string 
-}) => {
+
+  const handleFinalSubmit = async (formData: { coverImageDataUri?: string; categorySlug: string, excerpt: string }) => {
     const authorToSubmitId = isForAdmin ? adminSelectedAuthor?.id : user?.id;
     if (!authorToSubmitId || !editor) return;
     
-
-    const editorContent = editor?.getHTML();
-    console.log("here is the editor content", editorContent);
-    const postData: CreatePostInput = {
-      title,
-      content: editorContent,
-      excerpt: formData.excerpt, // Use excerpt from popup
-      categorySlug: formData.categorySlug,
-      authorId: authorToSubmitId,
-      imageUrl: formData.coverImageDataUri || `https://placehold.co/600x400.png`,
-      status: isForAdmin ? 'accepted' : 'pending', 
-    };
+    setIsDraftSaved(false); // Clear draft saved status
 
     try {
-      const newPost = await createPost(postData);
-      if (newPost) {
-        toast({ title: "Post Submitted!", description: `"${newPost.title}" ${newPost.status === 'pending' ? 'submitted for review' : 'published'}.` });
-        setTitle('');
+        if (currentEditingPostId) {
+            const postUpdateData: UpdatePostData = {
+                title,
+                content: editor?.getHTML(),
+                excerpt: formData.excerpt,
+                categorySlug: formData.categorySlug,
+                imageUrl: formData.coverImageDataUri,
+            };
+            const updatedPost = await updatePostAndSetPending(currentEditingPostId, postUpdateData);
+            if (updatedPost) {
+                toast({ title: "Post Updated!", description: `"${updatedPost.title}" has been submitted for review.` });
+                router.push(isForAdmin ? `/admin/blogs` : `/profile/${authorToSubmitId}`);
+            } else {
+                throw new Error("Failed to update post.");
+            }
+        } else {
+            const postData: CreatePostInput = {
+                title,
+                content: editor.getHTML(),
+                excerpt: formData.excerpt, 
+                categorySlug: formData.categorySlug,
+                authorId: authorToSubmitId,
+                imageUrl: formData.coverImageDataUri, 
+                status: isForAdmin ? 'accepted' : 'pending', 
+            };
+            const newPost = await createPost(postData);
+            if (newPost) {
+                toast({ title: "Post Submitted!", description: `"${newPost.title}" ${newPost.status === 'pending' ? 'submitted for review' : 'published'}.` });
+                if (isForAdmin) router.push(`/admin/blogs`); 
+                else router.push(`/posts/${newPost.id}/${generateSlug(newPost.title)}`);
+            } else throw new Error("Failed to create post.");
+        }
+        // Reset form state for new post or after edit
+        setTitle(''); 
         if(titleTextareaRef.current) {
-          titleTextareaRef.current.style.height = 'auto'; // Reset height
-        } 
-        editor.commands.setContent(''); setIsPostSubmissionPopupOpen(false);
-        if (isForAdmin) router.push(`/admin/blogs`); 
-        else router.push(`/posts/${newPost.id}/${generateSlug(newPost.title)}`);
-      } else throw new Error("Failed to create post.");
+          titleTextareaRef.current.value = '';
+          titleTextareaRef.current.style.height = 'auto'; 
+        }
+        editor.commands.setContent(''); 
+        setIsPostSubmissionPopupOpen(false);
+        setCurrentEditingPostId(null);
+        setInitialPostDataForEdit(null);
+        setFirstImageFromContentForPopup(null);
+
     } catch (error) {
-      toast({ title: "Submission Failed", description: String(error), variant: "destructive" });
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        if (errorMessage.toLowerCase().includes("blocked")) {
+            toast({ title: "Action Failed", description: "Your account has been suspended.", variant: "destructive" });
+        } else {
+            toast({ title: currentEditingPostId ? "Update Failed" : "Submission Failed", description: String(error), variant: "destructive" });
+        }
     }
   };
+
 
 
   const handleLinkInsert = (linkText: string, linkUrl: string) => {
@@ -325,10 +415,10 @@ const currentAuthorId = isForAdmin ? adminSelectedAuthor?.id : user?.id;
 const editorHasContent = editor && !editor.isEmpty;
 
 
-  if (authIsLoading && !isForAdmin) {
+  if ((authIsLoading && !isForAdmin && !currentEditingPostId) || isLoadingPostForEdit) {
       return <div className="flex-grow flex items-center justify-center h-[calc(100vh-130px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
-  if (!user && !isForAdmin) { 
+  if (!user && !isForAdmin && !currentEditingPostId) { 
       return <div className="flex-grow flex items-center justify-center h-[calc(100vh-130px)]"><p>Redirecting to signup...</p></div>;
   }
 
@@ -363,7 +453,7 @@ const editorHasContent = editor && !editor.isEmpty;
           </Link>
           <div className="flex items-center gap-2">
             <p className="text-sm  text-muted-foreground hidden sm:block">
-              Draft in{" "}
+              {currentEditingPostId ? 'Editing in ' : 'Draft in '}
               {isFullUser(authorForHeader)
                 ? `${authorForHeader.firstName} ${authorForHeader.lastName}`
                 : authorForHeader.name}
@@ -380,9 +470,8 @@ const editorHasContent = editor && !editor.isEmpty;
               size="sm"
               className=" rounded-xl bg-green-400 hover:bg-green-700 text-white"
               onClick={handlePublishClick}
-              disabled={!title.trim() || !editorHasContent}
-            >
-              Publish
+              disabled={!title.trim() || !editorHasContent}>
+              {currentEditingPostId ? 'Update' : 'Publish'}
             </Button>
 
          
@@ -507,7 +596,8 @@ const editorHasContent = editor && !editor.isEmpty;
 
       {isForAdmin && currentAuthorId && (
         <div className="p-4 border-t bg-card sticky bottom-0 z-10">
-          <Button onClick={handlePublishClick} size="lg" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={!title.trim() || (editor?.isEmpty ?? true) || !currentAuthorId}>Publish Post</Button>
+          <Button onClick={handlePublishClick} size="lg" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={!title.trim() || (editor?.isEmpty ?? true) || !currentAuthorId}>
+            {currentEditingPostId ? 'Update Post' : 'Publish Post'}</Button>
         </div>
       )}
 
@@ -519,7 +609,10 @@ const editorHasContent = editor && !editor.isEmpty;
         categories={allCategories} 
         onSubmit={handleFinalSubmit}
         authorSummary={isForAdmin ? adminSelectedAuthor : (user ? {id: user.id, name: `${user.firstName} ${user.lastName}`, imageUrl: user.profileImageUrl} : null)}
-        initialPreviewImageFromContent={firstImageFromContentForPopup}
+        initialPreviewImageFromContent={firstImageFromContentForPopup|| initialPostDataForEdit?.imageUrl || null}
+        initialCategorySlug={initialPostDataForEdit?.category}
+        initialExcerpt={initialPostDataForEdit?.excerpt}
+        isEditing={!!currentEditingPostId}
        />
       <AddImagePopup
         isOpen={isImagePopupOpen}

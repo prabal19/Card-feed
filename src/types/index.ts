@@ -115,3 +115,11 @@ export interface CreatePostInput {
   imageUrl?: string; // Can be data URI or external URL
   status?: 'accepted' | 'pending' | 'rejected'; 
 }
+
+export interface UpdatePostData {
+  title: string;
+  content: string;
+  excerpt: string;
+  categorySlug: string;
+  imageUrl?: string;
+}

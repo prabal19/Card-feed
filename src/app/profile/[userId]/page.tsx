@@ -211,7 +211,7 @@ export default function UserProfilePage() {
         {displayedPosts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {displayedPosts.map(post => (
-              <BlogCard key={post.id} post={post} />
+              <BlogCard key={post.id} post={post} showEditButton={isOwnProfile} />
             ))}
           </div>
         ) : (

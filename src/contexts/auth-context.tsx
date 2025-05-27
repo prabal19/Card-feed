@@ -102,37 +102,91 @@ useEffect(() => {
 }, []);
 
 
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | undefined;
+
+    if (user && user.id) {
+      const checkBlockedStatus = async () => {
+        try {
+          const freshUserProfile = await getUserProfile(user.id);
+          if (freshUserProfile && freshUserProfile.isBlocked) {
+            toast({
+              title: "Account Suspended",
+              description: "Your account has been suspended by an administrator.",
+              variant: "destructive",
+              duration: 7000,
+            });
+            logout(); // This will clear user state and redirect
+          }
+        } catch (error) {
+          console.error("Error checking user blocked status:", error);
+          // Don't logout on error, could be temporary network issue
+        }
+      };
+
+      // Check immediately on login/state hydration
+      checkBlockedStatus(); 
+      
+      // And then check periodically
+      intervalId = setInterval(checkBlockedStatus, 60000); // Check every 60 seconds
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [user, toast]); // Rerun when user state changes
 
 
   const performLoginSteps = (loggedInUser: User) => {
+    // Clear dialog state first to prevent flashing if this is called after dialog interaction
+    setCompleteProfileDialogOpen(false);
+    setGoogleAuthDataForDialog(null);
+
     let finalUser = { ...loggedInUser };
-   
     if (finalUser.description === undefined) {
-      finalUser.description = ""; 
+      finalUser.description = "";
     }
+    finalUser.authProvider = finalUser.authProvider || (finalUser.googleId ? 'google' : 'email');
+
+    if (finalUser.isBlocked) { // Double check if somehow a blocked user reached here
+      toast({ title: "Login Failed", description: "Your account has been suspended.", variant: "destructive"});
+      sessionStorage.removeItem('cardfeed_user');
+      setUser(null);
+      setIsAdmin(false);
+      router.push('/'); 
+      setIsLoading(false); // Ensure loading is false
+      return;
+    }
+    
+    let welcomeMessage = `Welcome back, ${finalUser.firstName}!`;
+     if (user && user.isBlocked === true && finalUser.isBlocked === false) {
+        welcomeMessage = "Your account has been reactivated. Welcome back!";
+    }
+
 
     setUser(finalUser);
     sessionStorage.setItem('cardfeed_user', JSON.stringify(finalUser));
-    
-    const isAdminUser = finalUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL || finalUser.role === 'admin';
+
+    const isAdminUser = finalUser.role === 'admin';
     setIsAdmin(isAdminUser);
 
-    toast({ title: "Login Successful", description: `Welcome back, ${finalUser.firstName}!`});
+    toast({ title: "Login Successful", description: welcomeMessage});
     
-    setCompleteProfileDialogOpen(false); 
-    setGoogleAuthDataForDialog(null); 
-    setIsLoading(false); // Ensure loading is false after all steps
-
     if (isAdminUser) {
       router.push('/admin/dashboard');
     } else {
       router.push('/');
     }
-    
+    setIsLoading(false); // Set loading false after all state and navigation
   }
 
-  const login = async (loginData: AdminLoginData | User) => {
+
+ const login = async (loginData: AdminLoginData | User) => {
     setIsLoading(true);
+    setCompleteProfileDialogOpen(false);
+    setGoogleAuthDataForDialog(null);
     try {
       if ('password' in loginData && loginData.email && loginData.password) {
         // Secure admin verification now on server
@@ -146,18 +200,25 @@ useEffect(() => {
           throw new Error("Invalid admin email or password.");
         }
       }
-      else if ('id' in loginData && !('password' in loginData)) {
-        const userToLogin = loginData as User;
-        performLoginSteps(loginData as User);
-        userToLogin.authProvider = userToLogin.googleId ? 'google' : (userToLogin.authProvider || 'email');
-        return;
+      else if ('id' in loginData && !('password' in loginData)) { // Regular user login (e.g., after Google auth)
+         const userToLogin = loginData as User;
+         if (userToLogin.isBlocked) { // Double check block status before final login steps
+            toast({ title: "Login Failed", description: "Your account has been suspended.", variant: "destructive"});
+            setIsLoading(false);
+            router.push('/');
+            return;
+         }
+         userToLogin.authProvider = userToLogin.googleId ? 'google' : (userToLogin.authProvider || 'email');
+         performLoginSteps(userToLogin);
+         return;
       }
       throw new Error("Invalid login data provided.");
 
     } catch (error) {
-      console.error("Login error:", error);
-      throw error;
-    } 
+       console.error("Login error:", error);
+       setIsLoading(false);
+       throw error; // Rethrow for AdminLoginForm to catch and display specific admin login error
+    }
   };
 
   const logout = async () => {
@@ -170,55 +231,49 @@ useEffect(() => {
   setUser(null);
   setIsAdmin(false);
   sessionStorage.removeItem('cardfeed_user');
+  setCompleteProfileDialogOpen(false); // Ensure dialog state is cleared on logout
+  setGoogleAuthDataForDialog(null);
   toast({ title: "Logged Out", description: "You have been successfully logged out." });
   router.push('/');
 };
 
- const initiateGoogleLoginOrSignup = async (googleData: GoogleAuthData, intent: 'login' | 'signup') => {
-  setIsLoading(true);
-  try {
-    const existingUser = await getUserProfile(googleData.email);
+  const initiateGoogleLoginOrSignup = async (googleData: GoogleAuthData, intent: 'login' | 'signup') => {
+    setIsLoading(true);
+    setCompleteProfileDialogOpen(false); // Proactively clear dialog state
+    setGoogleAuthDataForDialog(null); 
+    try {
+      const existingUser = await getUserProfile(googleData.email);
 
-    if (intent === 'login') {
       if (existingUser) {
-        await login(existingUser);
-      } else {
-        toast({
-          title: "Account Not Found",
-          description: "No account found with this Google email. Please sign up first.",
-          variant: "destructive"
-        });
-      }
-    } else if (intent === 'signup') {
-      if (existingUser) {
-        if (isProfileComplete(existingUser)) {
-          await login(existingUser);
+        if (existingUser.isBlocked) {
+          toast({ title: "Login Failed", description: "Your account has been suspended.", variant: "destructive" });
+          setIsLoading(false);
+           router.push('/'); 
+          return; 
+        }
+
+        await login(existingUser); // login itself calls performLoginSteps
+        if (intent === 'signup') {
           toast({ title: "Account Exists", description: "Logged you in with your existing Google account." });
-        } else {
-          // Existing but incomplete profile — show popup
-          setGoogleAuthDataForDialog(googleData);
-          setCompleteProfileDialogOpen(true);
         }
       } else {
-        // New user — show complete profile dialog
-        setGoogleAuthDataForDialog(googleData);
-        setCompleteProfileDialogOpen(true);
-        return;
+        // User does not exist
+        if (intent === 'login') {
+          toast({ title: "Account Not Found", description: "No account found with this Google email. Please sign up first.", variant: "destructive" });
+          setIsLoading(false);
+        } else { // intent === 'signup' and user is new
+          setGoogleAuthDataForDialog(googleData);
+          setCompleteProfileDialogOpen(true);
+          setIsLoading(false); // Allow dialog to render
+        }
       }
-    }
-  } catch (error) {
-    console.error(`Google ${intent} error:`, error);
-    toast({
-      title: `Google ${intent} Failed`,
-      description: error instanceof Error ? error.message : "An unexpected error occurred.",
-      variant: "destructive"
-    });
-  } finally {
-    if (!isCompleteProfileDialogOpen) {
+    } catch (error) {
+      console.error(`Google ${intent} error:`, error);
+      toast({ title: `Google ${intent} Failed`, description: error instanceof Error ? error.message : "An unexpected error occurred.", variant: "destructive"});
       setIsLoading(false);
     }
-  }
-};
+  };
+
 
  const handleCompleteProfileSubmit = async (formData: CompleteProfileFormData) => {
     if (!googleAuthDataForDialog) {
@@ -237,8 +292,16 @@ useEffect(() => {
         });
 
         if (userFromDb) {
-            userFromDb.authProvider = 'google';
-            await login(userFromDb); // login will set isLoading to false
+            if (userFromDb.isBlocked) { // Should ideally not happen if Google flow checks first, but good safeguard
+                toast({ title: "Account Creation Problem", description: "Your account has been created but is suspended. Please contact support.", variant: "destructive"});
+                setCompleteProfileDialogOpen(false);
+                setGoogleAuthDataForDialog(null);
+                setIsLoading(false);
+                router.push('/');
+                return;
+            }
+            userFromDb.authProvider = 'google'; 
+            await login(userFromDb);
         } else {
             throw new Error("Failed to finalize Google user profile.");
         }
@@ -254,13 +317,13 @@ useEffect(() => {
   return (
     <AuthContext.Provider value={{ user, isLoading, isAdmin, login, logout, initiateGoogleLoginOrSignup }}>
       {children}
-      {googleAuthDataForDialog && (
+      {isCompleteProfileDialogOpen && googleAuthDataForDialog && (
         <CompleteProfileDialog
           isOpen={isCompleteProfileDialogOpen}
           onClose={() => {
             setCompleteProfileDialogOpen(false);
             setGoogleAuthDataForDialog(null);
-            if (isLoading) setIsLoading(false);
+            if (isLoading && !user) setIsLoading(false);
           }}
           googleAuthData={googleAuthDataForDialog}
           onSubmit={handleCompleteProfileSubmit}

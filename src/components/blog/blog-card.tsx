@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { User, CalendarDays, Heart, Share2, MessageCircle, Send, XCircle, LinkIcon, Mail, MoreHorizontal } from 'lucide-react';
+import { User, CalendarDays, Heart, Share2, MessageCircle, Send, XCircle, LinkIcon, Mail, Edit } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { likePost, sharePost, addComment } from '@/app/actions/post.actions';
@@ -45,9 +45,10 @@ const WhatsAppIcon = () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="cu
 
 interface BlogCardProps {
   post: Post;
+  showEditButton?: boolean;
 }
 
-export function BlogCard({ post: initialPost }: BlogCardProps) {
+export function BlogCard({ post: initialPost,showEditButton = false }: BlogCardProps) {
   const { user } = useAuth();
   const [postData, setPostData] = useState<Post>(initialPost);
   const [isLiked, setIsLiked] = useState(false);
@@ -350,7 +351,15 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
               ({postData.comments?.length || 0})
             </Button>
           </div>
-          
+          <div className="flex items-center gap-2">
+            {showEditButton && user && user.id === postData.author.id && (
+              <Link href={`/create-post?editPostId=${postData.id}`} passHref>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <Edit className="mr-1.5 h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              </Link>
+            )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
@@ -388,7 +397,7 @@ export function BlogCard({ post: initialPost }: BlogCardProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
+          </div>
         </CardFooter>
       </Card>
 

@@ -3,7 +3,7 @@
 'use server';
 
 import clientPromise from '@/lib/mongodb';
-import type { Post, Comment, UserSummary, User, CreatePostInput as CreatePostInputType } from '@/types'; 
+import type { Post, Comment, UserSummary, User, CreatePostInput as CreatePostInputType,  UpdatePostData } from '@/types'; 
 import { ObjectId, UpdateFilter as MongoUpdateFilter } from 'mongodb'; // Removed Document import
 import { revalidatePath } from 'next/cache';
 import { categories as allStaticCategories } from '@/lib/data';
@@ -186,6 +186,70 @@ export async function createPost(data: CreatePostActionInput): Promise<Post | nu
     return null;
   }
 }
+
+export async function updatePostAndSetPending(postId: string, data: UpdatePostData): Promise<Post | null> {
+  try {
+    if (!ObjectId.isValid(postId)) {
+      console.error('Invalid ObjectId for updatePostAndSetPending:', postId);
+      return null;
+    }
+    const db = await getDb();
+    const postsCollection = db.collection<Post>('posts');
+
+    const postToUpdate = await postsCollection.findOne({ _id: new ObjectId(postId) as any });
+    if (!postToUpdate) {
+      console.error(`Post with ID ${postId} not found for update.`);
+      return null;
+    }
+
+    // Check if the author is blocked (important if this action can be called by non-admins later)
+    // For now, assuming this is initiated by user editing their own post, or admin.
+    // If initiated by user, the create-post page should check if the user is blocked before allowing submission.
+    // If admin initiated, this check might be skipped or handled differently.
+
+    let finalExcerpt = data.excerpt;
+    if (!finalExcerpt || finalExcerpt.trim() === '') {
+        finalExcerpt = data.content.substring(0, 150) + (data.content.length > 150 ? '...' : '');
+    }
+
+    const updatePayload: MongoUpdateFilter<Post> = {
+      $set: {
+        title: data.title,
+        content: data.content,
+        excerpt: finalExcerpt,
+        category: data.categorySlug,
+        imageUrl: data.imageUrl || undefined,
+        status: 'pending', // Crucially set status to pending
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    const result = await postsCollection.findOneAndUpdate(
+      { _id: new ObjectId(postId) as any },
+      updatePayload,
+      { returnDocument: 'after' }
+    );
+
+    if (result) {
+      const updatedPost = mapPostToDto(result);
+      revalidatePath('/');
+      revalidatePath(`/posts/${updatedPost.id}/${generateSlug(updatedPost.title)}`);
+      if (updatedPost.category) revalidatePath(`/category/${updatedPost.category}`);
+      if (updatedPost.author?.id) revalidatePath(`/profile/${updatedPost.author.id}`);
+      revalidatePath('/admin/blogs');
+      
+      // Optionally notify admin about a re-submitted post for review, if needed.
+      // Or notify user that their edited post is pending review.
+
+      return updatedPost;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error updating post and setting to pending:', error);
+    return null;
+  }
+}
+
 
 export async function updatePostStatus(postId: string, status: 'accepted' | 'pending' | 'rejected'): Promise<Post | null> {
   try {

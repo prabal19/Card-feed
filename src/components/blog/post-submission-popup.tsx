@@ -31,6 +31,9 @@ interface PostSubmissionPopupProps {
   onSubmit: (formData: { coverImageDataUri: string; categorySlug: string; excerpt: string }) => Promise<void> | void;
   authorSummary?: UserSummary | null; 
   initialPreviewImageFromContent?: string | null;
+  initialCategorySlug?: string;
+  initialExcerpt?: string;
+  isEditing?: boolean;
 }
 
 export function PostSubmissionPopup({
@@ -42,6 +45,9 @@ export function PostSubmissionPopup({
   onSubmit,
   authorSummary,
   initialPreviewImageFromContent,
+  initialCategorySlug,
+  initialExcerpt,
+  isEditing = false,
 }: PostSubmissionPopupProps) {
   const { user: loggedInUser } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
@@ -54,15 +60,25 @@ export function PostSubmissionPopup({
 
   useEffect(() => {
     if (isOpen) {
-      if (postContent && !previewSubtitle) {
+      // Set initial subtitle from post content or initialExcerpt
+      if (initialExcerpt) {
+        setPreviewSubtitle(initialExcerpt);
+      } else if (postContent && !previewSubtitle) {
         const defaultExcerpt = postContent.substring(0, 150) + (postContent.length > 150 ? '...' : '');
         setPreviewSubtitle(defaultExcerpt);
       }
+      
+      // Set initial category if provided
+      if (initialCategorySlug) {
+        setSelectedCategory(initialCategorySlug);
+      }
+
+      // Set initial cover image
       if (initialPreviewImageFromContent && !coverImageDataUri) {
         setCoverImageDataUri(initialPreviewImageFromContent);
       }
     }
-  }, [isOpen, postContent, previewSubtitle,initialPreviewImageFromContent, coverImageDataUri]);
+  }, [isOpen, postContent, initialExcerpt, initialCategorySlug, initialPreviewImageFromContent, coverImageDataUri]);
 
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,7 +215,7 @@ export function PostSubmissionPopup({
 
           <div className="space-y-6">
             <p className="text-sm text-foreground">
-              Publishing to: <span className="font-semibold text-primary">CardFeed Community</span>
+              {isEditing ? "Updating for:" : "Publishing to:"} <span className="font-semibold text-primary">CardFeed Community</span>
             </p>
             
             <div>
@@ -234,12 +250,12 @@ export function PostSubmissionPopup({
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Publishing...
+                    {isEditing ? 'Updating...' : 'Publishing...'}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="mr-2 h-4 w-4"/>
-                     Publish now
+                     {isEditing ? 'Submit for Review' : 'Publish now'}
                   </>
                 )}
               </Button>
