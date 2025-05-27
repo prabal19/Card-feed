@@ -165,7 +165,7 @@ export function PostSubmissionPopup({
               <h3 className="text-lg font-semibold mb-2 text-foreground">Story Preview</h3>
               <label
                 htmlFor="cover-image-upload-popup"
-                className="mt-1 flex justify-center items-center w-full h-64 border-2 border-border border-dashed rounded-md cursor-pointer hover:border-primary transition-colors bg-muted/30 relative overflow-hidden"
+                className="mt-1 flex justify-center items-center w-full h-96 border-2 border-border border-dashed rounded-md cursor-pointer hover:border-primary transition-colors bg-muted/30 relative overflow-hidden"
               >
                 {coverImageDataUri ? (
                   <Image 
@@ -201,16 +201,14 @@ export function PostSubmissionPopup({
                 value={previewSubtitle}
                 onChange={(e) => setPreviewSubtitle(e.target.value)}
                 placeholder="Write a short preview of your story..."
-                className="mt-1 min-h-[80px]"
+                className="mt-1 min-h-[40px]"
                 maxLength={200}
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground mt-1">{previewSubtitle.length}/200 characters</p>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              <strong>Note:</strong> Changes here will affect how your story appears in public places like CardFeed&apos;s homepage.
-            </p>
+            
           </div>
 
           <div className="space-y-6">

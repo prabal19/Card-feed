@@ -160,7 +160,7 @@ useEffect(() => {
       return;
     }
     
-    let welcomeMessage = `Welcome back, ${finalUser.firstName}!`;
+    let welcomeMessage = `Welcome, ${finalUser.firstName}!`;
      if (user && user.isBlocked === true && finalUser.isBlocked === false) {
         welcomeMessage = "Your account has been reactivated. Welcome back!";
     }

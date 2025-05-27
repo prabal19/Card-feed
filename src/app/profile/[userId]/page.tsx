@@ -21,12 +21,11 @@ import type { User, UpdateUserProfileInput, Post } from '@/types';
 import { getUserProfile, updateUserProfile } from '@/app/actions/user.actions'; 
 import { getPostsByAuthorId } from '@/app/actions/post.actions';
 import { BlogCard } from '@/components/blog/blog-card';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const POSTS_PER_SECTION_LIMIT = 4; // Number of posts to show initially per status section
+const POSTS_PER_SECTION_LIMIT = 2; // Number of posts to show initially per status section
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
@@ -53,7 +52,6 @@ export default function UserProfilePage() {
   const [showAllAccepted, setShowAllAccepted] = useState(false);
   const [showAllPending, setShowAllPending] = useState(false);
   const [showAllRejected, setShowAllRejected] = useState(false);
-
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -125,7 +123,6 @@ export default function UserProfilePage() {
   const acceptedPosts = useMemo(() => allAuthorPosts.filter(post => post.status === 'accepted'), [allAuthorPosts]);
   const pendingPosts = useMemo(() => allAuthorPosts.filter(post => post.status === 'pending'), [allAuthorPosts]);
   const rejectedPosts = useMemo(() => allAuthorPosts.filter(post => post.status === 'rejected'), [allAuthorPosts]);
-
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -204,12 +201,12 @@ export default function UserProfilePage() {
   ) => {
     const displayedPosts = showAll ? posts : posts.slice(0, POSTS_PER_SECTION_LIMIT);
     return (
-      <section>
+      <section className="w-full">
         <h3 className="text-xl font-semibold text-primary mb-4 flex items-center gap-2">
           {statusIcon} {title} ({posts.length})
         </h3>
         {displayedPosts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {displayedPosts.map(post => (
               <BlogCard key={post.id} post={post} showEditButton={isOwnProfile} />
             ))}
@@ -261,9 +258,12 @@ export default function UserProfilePage() {
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <main className="flex-grow container mx-auto px-4 py-12 pt-28 md:pt-8">
-        <Card className="max-w-3xl mx-auto rounded-3xl my-8 bg-card">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Column 1: User Information */}
+        <div className="w-full">
+        <Card className="rounded-3xl bg-card">
           <CardHeader className="text-center border-b pb-6">
-            <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-primary shadow-lg">
+            <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-primary shadow-lg object-cover">
                 <AvatarImage src={imagePreview || undefined}  className="object-cover"/>
               <AvatarFallback className="text-4xl">{profileUser.firstName?.charAt(0)}{profileUser.lastName?.charAt(0)}</AvatarFallback>
             </Avatar>
@@ -338,12 +338,13 @@ export default function UserProfilePage() {
           </CardContent>
         </Card>
 
-        <Separator className="my-10" />
+    </div>
 
-        <div className="max-w-4xl mx-auto">
+          {/* Column 2: User Posts */}
+          <div className="w-full">
             {isOwnProfile ? (
                 <>
-                    <h2 className="text-2xl font-bold text-primary mb-6 text-center">Your Posts</h2>
+                    <h2 className="text-2xl font-bold text-primary mb-6 text-center md:text-left">Your Posts</h2>
                     <Tabs defaultValue="accepted" className="w-full">
                         <TabsList className="grid w-full grid-cols-3 mb-6">
                         <TabsTrigger value="accepted">Accepted ({acceptedPosts.length})</TabsTrigger>
@@ -384,7 +385,7 @@ export default function UserProfilePage() {
                 </>
             ) : (
                  <>
-                    <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+                    <h2 className="text-2xl font-bold text-primary mb-6 text-center md:text-left">
                         Posts by {profileUser.firstName} {profileUser.lastName}
                     </h2>
                     {isLoadingPosts ? (
@@ -392,7 +393,7 @@ export default function UserProfilePage() {
                             <Loader2 className="h-10 w-10 animate-spin text-primary" />
                         </div>
                     ) : acceptedPosts.length > 0 ? ( // For public view, only show accepted posts
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {acceptedPosts.map(post => (
                                 <BlogCard key={post.id} post={post} />
                             ))}
@@ -404,6 +405,7 @@ export default function UserProfilePage() {
                     )}
                 </>
             )}
+        </div>
         </div>
       </main>
     </div>

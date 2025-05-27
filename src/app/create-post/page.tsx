@@ -44,6 +44,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getUnreadNotificationCount } from '@/app/actions/notification.actions';
+import { LinkPreviewNode } from '@/extensions/LinkPreviewNode'
+
 
 
 export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = null }: { isForAdmin?: boolean, adminSelectedAuthor?: UserSummary | null }) {
@@ -71,7 +73,7 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
 
   const editor = useEditor({
     extensions: [
-      Document, Paragraph, Text, History,
+      Document, Paragraph, Text, History, 
       StarterKit.configure({ document: false, paragraph: false, text: false, history: false, heading: false, bulletList: false, orderedList: false, hardBreak: false, horizontalRule: false, strike: false, }),
       Heading.configure({ levels: [1, 2, 3] }),
       Underline,
@@ -83,7 +85,7 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
           class: 'w-full object-cover rounded-md my-4 transition-all hover:border-2 hover:border-green-500', // Styling for block-like appearance with margin
         },
       }),
-       BulletList, ListItem, OrderedList, HardBreak, HorizontalRule, Strike,
+       BulletList, ListItem, OrderedList, HardBreak, HorizontalRule, Strike, LinkPreviewNode
     ],
     content: '',
     editorProps: {
@@ -273,9 +275,9 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
     if (!editor || editor.isEmpty) {
       toast({ title: "Content Required", variant: "destructive" }); return;
     }
-
+    const contentHTML = editor.getHTML();
     if (!firstImageFromContentForPopup && !initialPostDataForEdit?.imageUrl) {
-        const contentHTML = editor.getHTML();
+
         const match = contentHTML.match(/<img[^>]+src\s*=\s*['"]([^'"]+)['"]/i);
         setFirstImageFromContentForPopup(match ? match[1] : null);
     } else if (initialPostDataForEdit?.imageUrl && !firstImageFromContentForPopup) {
@@ -396,16 +398,53 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
     }
   };
 
-    const handleEmbedInsert = (embedUrl: string) => {
-    if (!editor || !embedUrl.trim()) return;
-  
-    editor.chain().focus().insertContent(`<p>[Embed: <a href="${embedUrl}" target="_blank" rel="noopener noreferrer">${embedUrl}</a>]</p>`).run();
-    toast({title: "Embed Inserted", description: "A link to the embed source has been inserted.", variant: "default"});
-    editor.chain().focus().insertContent('<p></p>').run();
-    setIsEmbedPopupOpen(false);
-    setIsQuickInsertMenuOpen(false);
-    setShowQuickInsertButton(false);
-  };
+const handleEmbedInsert = async (embedUrl: string) => {
+  if (!editor || !embedUrl.trim()) return;
+
+  const res = await fetch('/api/fetchLinkPreview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: embedUrl }),
+  })
+
+  const result = await res.json()
+
+  if (result.success) {
+    const { title, description, image, url } = result.preview
+
+    editor
+  .chain()
+  .focus()
+  .insertContent([
+    {
+      type: 'linkPreview',
+      attrs: {
+        title,
+        description,
+        image,
+        url,
+      },
+    },
+    {
+      type: 'paragraph',
+      content: [],
+    },
+  ])
+  .scrollIntoView()
+  .run();
+
+
+    toast({ title: 'Link Preview Added', description: `Preview inserted for ${url}` })
+  } else {
+    editor.chain().focus().insertContent(`<p><a href="${embedUrl}">${embedUrl}</a></p>`).run()
+    toast({ title: 'Fallback Link Inserted', description: 'Could not fetch preview.' })
+  }
+
+  setIsEmbedPopupOpen(false)
+  setIsQuickInsertMenuOpen(false)
+  setShowQuickInsertButton(false)
+}
+
 
 const isFullUser = (author: User | UserSummary): author is User =>
   "firstName" in author && "lastName" in author;
@@ -434,6 +473,7 @@ const editorHasContent = editor && !editor.isEmpty;
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault(); // Prevent newline in title
       editor?.commands.focus(); // Move focus to editor
+      
     }
     // Shift+Enter will behave normally (new line in textarea)
   };
@@ -528,9 +568,9 @@ const editorHasContent = editor && !editor.isEmpty;
     )}
 
 
-      <FormattingToolbar editor={editor} isForAdmin={isForAdmin} onCommand={handleFormattingCommand}/>
+      {!isForAdmin && <FormattingToolbar editor={editor} isForAdmin={isForAdmin} onCommand={handleFormattingCommand}/>}
 
-      <main className={cn("flex-grow w-full relative", !isForAdmin && "bg-white px-3 sm:py-2 lg:py-4 md:py-6", isForAdmin && "bg-white overflow-y-auto p-4 flex-grow")}>
+      <div className={cn("flex-grow w-full relative", !isForAdmin && "bg-white px-3 sm:py-2 lg:py-4 md:py-6", isForAdmin && "bg-white overflow-y-auto p-4 flex-grow")}>
         <div ref={editorContentWrapperRef} className={cn("max-w-2xl mx-auto relative", isForAdmin && "")}>
           {showQuickInsertButton && editor && (
             <div
@@ -592,7 +632,7 @@ const editorHasContent = editor && !editor.isEmpty;
           />
           <EditorContent editor={editor} />
         </div>
-      </main>
+      </div>
 
       {isForAdmin && currentAuthorId && (
         <div className="p-4 border-t bg-card sticky bottom-0 z-10">
