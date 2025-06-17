@@ -14,6 +14,13 @@ export interface User {
   authProvider?: 'google' | 'email' | 'admin_created';
   role?: 'user' | 'admin';
   isBlocked?: boolean; 
+  socialLinks?: {
+    twitter?: string;
+    linkedin?: string;
+    github?: string;
+    instagram?: string;
+    website?: string;
+  };
   createdAt?: Date | string;
   updatedAt?: Date | string;
 }
@@ -31,6 +38,9 @@ export interface Comment {
   author: UserSummary;
   text: string;
   date: string;
+  parentId?: string; // For replies
+  likes?: number;
+  likedBy?: string[];
 }
 
 export type Post = {
@@ -64,6 +74,13 @@ export interface UpdateUserProfileInput {
   lastName?: string;
   description?: string;
   profileImageUrl?: string; // Can be data URI or external URL
+  socialLinks?: {
+    twitter?: string;
+    linkedin?: string;
+    github?: string;
+    instagram?: string;
+    website?: string;
+  };
 }
 
 export interface UpdateUserByAdminInput {
@@ -74,6 +91,13 @@ export interface UpdateUserByAdminInput {
   profileImageUrl?: string; // Can be data URI or external URL
   role?: 'user' | 'admin';
   isBlocked?: boolean;
+  socialLinks?: {
+    twitter?: string;
+    linkedin?: string;
+    github?: string;
+    instagram?: string;
+    website?: string;
+  };
 }
 
 
@@ -81,14 +105,17 @@ export interface Notification {
   _id?: string;
   id: string;
   userId: string;
-  type: 'like' | 'comment' |'post_status_change';
+  type: 'like' | 'comment' |'post_status_change' | 'comment_like' | 'comment_reply';
   postId: string;
   postSlug: string;
   postTitle: string;
   actingUser: UserSummary;
   isRead: boolean;
   createdAt: string;
-  newStatus?: 'accepted' | 'rejected'; 
+  newStatus?: 'accepted' | 'rejected';
+  commentId?: string; // For comment_like and comment_reply
+  commentText?: string; // For comment_reply (text of the reply) or comment_like (text of the liked comment)
+  parentCommentAuthorId?: string 
 }
 
 export interface UserWithPostCount extends User {
@@ -104,6 +131,13 @@ export interface CreateUserByAdminInput {
   role: 'user' | 'admin';
   description?: string;
   profileImageUrl?: string; // Expecting a data URI or an external URL from client
+  socialLinks?: { // Added for completeness, though likely not set at initial creation by admin
+    twitter?: string;
+    linkedin?: string;
+    github?: string;
+    instagram?: string;
+    website?: string;
+  };
 }
 
 export interface CreatePostInput {

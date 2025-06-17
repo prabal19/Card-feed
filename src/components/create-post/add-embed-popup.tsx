@@ -52,12 +52,13 @@ export function AddEmbedPopup({ isOpen, onClose, onSubmit }: AddEmbedPopupProps)
 
     setIsSubmitting(true);
     try {
-      await onSubmit(embedUrl.trim());
+      onSubmit(embedUrl.trim());
       // Parent's onSubmit should call onClose and reset form if successful
     } catch (error) {
        console.error("Error in AddEmbedPopup submit:", error);
        toast({ title: "Error", description: "Could not process embed information.", variant: "destructive"});
     } finally {
+      setEmbedUrl('');
       setIsSubmitting(false);
     }
   };

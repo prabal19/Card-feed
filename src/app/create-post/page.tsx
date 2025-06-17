@@ -44,7 +44,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getUnreadNotificationCount } from '@/app/actions/notification.actions';
-import { LinkPreviewNode } from '@/extensions/LinkPreviewNode'
+import { LinkPreviewNode } from '@/extensions/LinkPreviewNode';
+import { EmbedPasteHandler } from '@/extensions/EmbedPasteHandler'
 
 
 
@@ -77,7 +78,7 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
       StarterKit.configure({ document: false, paragraph: false, text: false, history: false, heading: false, bulletList: false, orderedList: false, hardBreak: false, horizontalRule: false, strike: false, }),
       Heading.configure({ levels: [1, 2, 3] }),
       Underline,
-      LinkExtension.configure({ openOnClick: false, autolink: true, linkOnPaste: true, HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' } }),
+      LinkExtension.configure({ autolink: true, linkOnPaste: true, HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' } }),
       ImageExtension.configure({ // Using Tiptap's image extension
         inline: false, // Ensures the image is a block element
         allowBase64: true, // Crucial for data URIs
@@ -85,7 +86,7 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
           class: 'w-full object-cover rounded-md my-4 transition-all hover:border-2 hover:border-green-500', // Styling for block-like appearance with margin
         },
       }),
-       BulletList, ListItem, OrderedList, HardBreak, HorizontalRule, Strike, LinkPreviewNode
+       BulletList, ListItem, OrderedList, HardBreak, HorizontalRule, Strike, LinkPreviewNode,EmbedPasteHandler
     ],
     content: '',
     editorProps: {
@@ -360,7 +361,8 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
     
     const chain = editor.chain().focus();
     if (editor.state.selection.empty) {
-        chain.insertContent({ type: 'text', text: textToUse, marks: [ { type: 'link', attrs: { href: fullUrl, target: '_blank', rel: 'noopener noreferrer nofollow' } } ] });
+        chain.insertContent(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer nofollow">${textToUse}</a>`);
+
     } else {
         chain.extendMarkRange('link').setLink({ href: fullUrl, target: '_blank', rel: 'noopener noreferrer nofollow' });
     }
@@ -398,52 +400,82 @@ export function CreatePostContent({ isForAdmin = false, adminSelectedAuthor = nu
     }
   };
 
-const handleEmbedInsert = async (embedUrl: string) => {
+const handleEmbedInsert = (embedUrl: string) => {
   if (!editor || !embedUrl.trim()) return;
 
-  const res = await fetch('/api/fetchLinkPreview', {
+  const pos = editor.state.selection.from;
+
+  // 1. Insert "Loading preview..." placeholder
+  editor
+    .chain()
+    .focus()
+    .insertContentAt(pos, [
+      {
+        type: 'paragraph',
+        content: [
+          {
+            type: 'text',
+            text: 'Loading preview...',
+          },
+        ],
+      },
+      {
+        type: 'paragraph',
+        content: [],
+      },
+    ])
+    .run();
+
+  // 2. Move on immediately and fetch metadata in background
+  fetch('/api/fetchLinkPreview', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url: embedUrl }),
   })
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.success) {
+        const { title, description, image, url } = result.preview;
 
-  const result = await res.json()
+        const tr = editor.view.state.tr;
 
-  if (result.success) {
-    const { title, description, image, url } = result.preview
+        // Find the position of "Loading preview..."
+        const docText = editor.view.state.doc.textBetween(0, editor.view.state.doc.content.size, '\n', '\n');
+        const loadingPos = docText.indexOf('Loading preview...');
+        const fromPos = loadingPos >= 0 ? loadingPos : pos;
 
-    editor
-  .chain()
-  .focus()
-  .insertContent([
-    {
-      type: 'linkPreview',
-      attrs: {
-        title,
-        description,
-        image,
-        url,
-      },
-    },
-    {
-      type: 'paragraph',
-      content: [],
-    },
-  ])
-  .scrollIntoView()
-  .run();
+        // Replace placeholder with preview
+        tr.delete(fromPos, fromPos + 'Loading preview...'.length)
+          .insert(fromPos, editor.schema.nodes.linkPreview.create({
+            title,
+            description,
+            image,
+            url,
+          }))
+          .insert(fromPos + 1, editor.schema.nodes.paragraph.create());
 
+        editor.view.dispatch(tr);
 
-    toast({ title: 'Link Preview Added', description: `Preview inserted for ${url}` })
-  } else {
-    editor.chain().focus().insertContent(`<p><a href="${embedUrl}">${embedUrl}</a></p>`).run()
-    toast({ title: 'Fallback Link Inserted', description: 'Could not fetch preview.' })
-  }
+        toast({
+          title: 'Link Preview Added',
+          description: `Preview inserted for ${url}`,
+        });
+      } else {
+        editor.chain().focus().insertContent(`<p><a href="${embedUrl}">${embedUrl}</a></p>`).run();
+        toast({ title: 'Fallback Link Inserted', description: 'Could not fetch preview.' });
+      }
+    })
+    .catch((error) => {
+      console.error('Embed fetch failed:', error);
+      toast({ title: 'Error', description: 'Could not fetch embed preview.', variant: 'destructive' });
+    });
 
-  setIsEmbedPopupOpen(false)
-  setIsQuickInsertMenuOpen(false)
-  setShowQuickInsertButton(false)
-}
+  // Immediately close embed popup
+  setIsEmbedPopupOpen(false);
+  setIsQuickInsertMenuOpen(false);
+  setShowQuickInsertButton(false);
+};
+
 
 
 const isFullUser = (author: User | UserSummary): author is User =>
@@ -508,7 +540,7 @@ const editorHasContent = editor && !editor.isEmpty;
             <Button
               variant="ghost"
               size="sm"
-              className=" rounded-xl bg-green-400 hover:bg-green-700 text-white"
+              className=" cursor-pointer rounded-xl bg-black hover:bg-slate-800 text-white"
               onClick={handlePublishClick}
               disabled={!title.trim() || !editorHasContent}>
               {currentEditingPostId ? 'Update' : 'Publish'}

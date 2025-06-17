@@ -21,6 +21,9 @@ function mapCommentToDto(comment: any): Comment {
     ...comment,
     _id: comment._id?.toString(),
     id: comment.id?.toString() || comment._id?.toString(),
+    likes: comment.likes || 0,
+    likedBy: comment.likedBy || [],
+    parentId: comment.parentId || undefined,
   };
 }
 
@@ -171,7 +174,7 @@ export async function createPost(data: CreatePostActionInput): Promise<Post | nu
 
     revalidatePath('/');
     revalidatePath(`/category/${data.categorySlug}`);
-    revalidatePath(`/posts/${result.insertedId.toString()}`); 
+    revalidatePath(`/posts/${result.insertedId.toString()}/${generateSlug(newPostData.title)}`); 
     revalidatePath(`/profile/${data.authorId}`);
     revalidatePath('/admin/blogs'); 
 
@@ -201,11 +204,6 @@ export async function updatePostAndSetPending(postId: string, data: UpdatePostDa
       console.error(`Post with ID ${postId} not found for update.`);
       return null;
     }
-
-    // Check if the author is blocked (important if this action can be called by non-admins later)
-    // For now, assuming this is initiated by user editing their own post, or admin.
-    // If initiated by user, the create-post page should check if the user is blocked before allowing submission.
-    // If admin initiated, this check might be skipped or handled differently.
 
     let finalExcerpt = data.excerpt;
     if (!finalExcerpt || finalExcerpt.trim() === '') {
@@ -238,8 +236,6 @@ export async function updatePostAndSetPending(postId: string, data: UpdatePostDa
       if (updatedPost.author?.id) revalidatePath(`/profile/${updatedPost.author.id}`);
       revalidatePath('/admin/blogs');
       
-      // Optionally notify admin about a re-submitted post for review, if needed.
-      // Or notify user that their edited post is pending review.
 
       return updatedPost;
     }
@@ -272,6 +268,7 @@ export async function updatePostStatus(postId: string, status: 'accepted' | 'pen
       revalidatePath('/admin/blogs'); 
       if (updatedPost.category) revalidatePath(`/category/${updatedPost.category}`);
       if (updatedPost.author?.id) revalidatePath(`/profile/${updatedPost.author.id}`);
+      revalidatePath(`/posts/${updatedPost.id}/${generateSlug(updatedPost.title)}`);
 
       if ((status === 'accepted' || status === 'rejected') && updatedPost.author?.id) {
         const adminActor: UserSummary = {
@@ -357,7 +354,7 @@ export async function likePost(postId: string, userId: string): Promise<Post | n
     if (result) {
       const updatedPost = mapPostToDto(result);
       revalidatePath('/');
-      revalidatePath(`/posts/${postId}`);
+      revalidatePath(`/posts/${postId}/${generateSlug(updatedPost.title)}`);
       if (updatedPost.author?.id) revalidatePath(`/profile/${updatedPost.author.id}`);
       revalidatePath('/admin/blogs');
 
@@ -410,7 +407,7 @@ export async function sharePost(postId: string): Promise<Post | null> {
     if (result) {
       const updatedPost = mapPostToDto(result);
       revalidatePath('/');
-      revalidatePath(`/posts/${postId}`);
+      revalidatePath(`/posts/${postId}/${generateSlug(updatedPost.title)}`);
       if (updatedPost.author?.id) revalidatePath(`/profile/${updatedPost.author.id}`);
       revalidatePath('/admin/blogs');
       return updatedPost;
@@ -428,12 +425,13 @@ export interface AddCommentInput {
   authorName: string;
   authorImageUrl?: string;
   text: string;
+  parentId?: string;
 }
 
 export async function addComment(commentData: AddCommentInput): Promise<Post | null> {
   try {
     if (!ObjectId.isValid(commentData.postId)) {
-      console.error('Invalid ObjectId for addComment:', commentData.postId);
+      console.error('Invalid ObjectId for addComment (postId):', commentData.postId);
       return null;
     }
     const actingUser = await getUserProfile(commentData.authorId);
@@ -449,6 +447,11 @@ export async function addComment(commentData: AddCommentInput): Promise<Post | n
 
     const db = await getDb();
     const postsCollection = db.collection<Post>('posts');
+    const post = await postsCollection.findOne({ _id: new ObjectId(commentData.postId) as any });
+    if (!post) {
+      console.error(`Post with ID ${commentData.postId} not found.`);
+      return null;
+    }
 
     const actingUserSummary: UserSummary = {
         id: commentData.authorId,
@@ -464,7 +467,12 @@ export async function addComment(commentData: AddCommentInput): Promise<Post | n
       author: actingUserSummary,
       text: commentData.text,
       date: new Date().toISOString(),
+      likes: 0,
+      likedBy: [],
     };
+    if (commentData.parentId) {
+      newComment.parentId = commentData.parentId;
+    }
 
     const commentForDb = {
         ...newComment,
@@ -480,10 +488,25 @@ export async function addComment(commentData: AddCommentInput): Promise<Post | n
     if (result) {
       const updatedPost = mapPostToDto(result);
       revalidatePath('/');
-      revalidatePath(`/posts/${commentData.postId}`);
+      revalidatePath(`/posts/${commentData.postId}/${generateSlug(updatedPost.title)}`);
       if (updatedPost.author?.id) revalidatePath(`/profile/${updatedPost.author.id}`);
       revalidatePath('/admin/blogs');
-
+        if (commentData.parentId) { // It's a reply
+        const parentComment = post.comments.find(c => c._id?.toString() === commentData.parentId || c.id === commentData.parentId);
+        if (parentComment && parentComment.author.id !== commentData.authorId) {
+          await createNotification(
+            parentComment.author.id,
+            'comment_reply',
+            updatedPost.id,
+            generateSlug(updatedPost.title),
+            updatedPost.title,
+            actingUserSummary,
+            undefined, // no newStatus for comment_reply
+            commentData.parentId,
+            commentData.text // Text of the reply
+          );
+        }
+      } else {
       if (updatedPost.author?.id && updatedPost.author.id !== commentData.authorId) {
          await createNotification(
             updatedPost.author.id,
@@ -491,9 +514,13 @@ export async function addComment(commentData: AddCommentInput): Promise<Post | n
             updatedPost.id,
             generateSlug(updatedPost.title),
             updatedPost.title,
-            actingUserSummary
+            actingUserSummary,
+              undefined, // no newStatus for comment
+              undefined, // no commentId for top-level comment notification
+              commentData.text
           );
       }
+    }
       return updatedPost;
     }
     return null;
@@ -505,6 +532,121 @@ export async function addComment(commentData: AddCommentInput): Promise<Post | n
     return null;
   }
 }
+
+
+export async function likeComment(postId: string, commentId: string, userId: string): Promise<Post | null> {
+  try {
+    if (!ObjectId.isValid(postId) || !ObjectId.isValid(commentId)) {
+      console.error('Invalid ObjectId for likeComment:', { postId, commentId });
+      return null;
+    }
+    const actingUser = await getUserProfile(userId);
+    if (!actingUser) {
+      console.error(`User with ID ${userId} not found for liking comment.`);
+      return null;
+    }
+    if (actingUser.isBlocked) {
+      console.error(`User with ID ${userId} is blocked and cannot like comments.`);
+      throw new Error("Blocked users cannot like comments.");
+    }
+
+    const db = await getDb();
+    const postsCollection = db.collection<Post>('posts');
+    const post = await postsCollection.findOne({ _id: new ObjectId(postId) as any });
+
+    if (!post) {
+      console.error('Post not found for liking comment:', postId);
+      return null;
+    }
+
+    const commentIndex = post.comments.findIndex(c => c._id?.toString() === commentId || c.id === commentId);
+    if (commentIndex === -1) {
+      console.error('Comment not found for liking:', commentId);
+      return null;
+    }
+
+    const commentToUpdate = post.comments[commentIndex];
+    const likedByArray = Array.isArray(commentToUpdate.likedBy) ? commentToUpdate.likedBy : [];
+    const alreadyLiked = likedByArray.includes(userId);
+
+    let newLikesCount = commentToUpdate.likes || 0;
+    let newLikedByArray = [...likedByArray];
+
+    if (alreadyLiked) {
+      newLikesCount = Math.max(0, newLikesCount - 1);
+      newLikedByArray = newLikedByArray.filter(id => id !== userId);
+    } else {
+      newLikesCount += 1;
+      newLikedByArray.push(userId);
+    }
+
+    const updateField = `comments.${commentIndex}.likes`;
+    const updateLikedByField = `comments.${commentIndex}.likedBy`;
+
+    const result = await postsCollection.findOneAndUpdate(
+      { _id: new ObjectId(postId) as any, "comments.id": commentId },
+      { $set: { [updateField]: newLikesCount, [updateLikedByField]: newLikedByArray, updatedAt: new Date().toISOString() } },
+      { returnDocument: 'after' }
+    );
+     // Fallback if "comments.id" direct match fails due to ObjectId string discrepancies
+    if (!result) {
+        const resultFallback = await postsCollection.findOneAndUpdate(
+            { _id: new ObjectId(postId) as any, "comments._id": new ObjectId(commentId) as any },
+            { $set: { [updateField]: newLikesCount, [updateLikedByField]: newLikedByArray, updatedAt: new Date().toISOString() } },
+            { returnDocument: 'after' }
+        );
+        if (resultFallback) {
+             const updatedPost = mapPostToDto(resultFallback);
+             revalidatePath(`/posts/${postId}/${generateSlug(updatedPost.title)}`);
+             // Notification for comment like
+            if (!alreadyLiked && commentToUpdate.author.id !== userId) {
+                await createNotification(
+                    commentToUpdate.author.id,
+                    'comment_like',
+                    updatedPost.id,
+                    generateSlug(updatedPost.title),
+                    updatedPost.title,
+                    { id: actingUser.id, name: `${actingUser.firstName} ${actingUser.lastName}`, imageUrl: actingUser.profileImageUrl },
+                    undefined, // no newStatus
+                    commentId,
+                    commentToUpdate.text.substring(0, 50) + "..." // snippet of liked comment
+                );
+            }
+            return updatedPost;
+        }
+    }
+
+
+    if (result) {
+      const updatedPost = mapPostToDto(result);
+      revalidatePath(`/posts/${postId}/${generateSlug(updatedPost.title)}`);
+
+      // Notification for comment like
+      if (!alreadyLiked && commentToUpdate.author.id !== userId) {
+        await createNotification(
+          commentToUpdate.author.id,
+          'comment_like',
+          updatedPost.id,
+          generateSlug(updatedPost.title),
+          updatedPost.title,
+          { id: actingUser.id, name: `${actingUser.firstName} ${actingUser.lastName}`, imageUrl: actingUser.profileImageUrl },
+          undefined, // no newStatus
+          commentId,
+          commentToUpdate.text.substring(0, 50) + "..." // snippet of liked comment
+        );
+      }
+      return updatedPost;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error liking comment:', error);
+    if (error instanceof Error && error.message === "Blocked users cannot like comments.") {
+        throw error;
+    }
+    return null;
+  }
+}
+
 
 export async function getCategoriesWithCounts(): Promise<Array<{ category: string, count: number }>> {
   try {

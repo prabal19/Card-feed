@@ -17,7 +17,10 @@ function mapNotificationToDto(notificationDoc: any): Notification {
     ...notificationDoc,
     _id: notificationDoc._id?.toString(),
     id: notificationDoc._id?.toString(),
-    newStatus: notificationDoc.newStatus || undefined, // Ensure newStatus is mapped
+    newStatus: notificationDoc.newStatus || undefined, 
+     commentId: notificationDoc.commentId || undefined,
+    commentText: notificationDoc.commentText || undefined,
+    parentCommentAuthorId: notificationDoc.parentCommentAuthorId || undefined,
   };
 }
 
@@ -28,13 +31,14 @@ export async function createNotification(
   postSlug: string,
   postTitle: string,
   actingUser: UserSummary,
-  newStatus?: 'accepted' | 'rejected' // Add newStatus as an optional parameter
+  newStatus?: 'accepted' | 'rejected' ,
+  commentId?: string, 
+  commentText?: string,
+  parentCommentAuthorId?: string
 ): Promise<Notification | null> {
   try {
-    // Avoid notifying user for their own actions on their own posts (though post.actions should also check this)
-    // For post_status_change, targetUserId (author) and actingUser.id (admin_system) will be different.
     if (type !== 'post_status_change' && targetUserId === actingUser.id) {
-      console.log(`Skipping notification: target user ${targetUserId} is the same as acting user ${actingUser.id}`);
+      console.log(`Skipping notification: target user ${targetUserId} is the same as acting user ${actingUser.id} for type ${type}`);
       return null;
     }
 
@@ -54,6 +58,15 @@ export async function createNotification(
 
     if (type === 'post_status_change' && newStatus) {
       newNotificationData.newStatus = newStatus;
+    }
+        if ((type === 'comment_like' || type === 'comment_reply') && commentId) {
+      newNotificationData.commentId = commentId;
+    }
+    if (commentText && (type === 'comment_reply' || type === 'comment_like' || type === 'comment')) {
+        newNotificationData.commentText = commentText;
+    }
+    if (type === 'comment_reply' && parentCommentAuthorId) { // Should align with targetUserId
+        newNotificationData.parentCommentAuthorId = parentCommentAuthorId;
     }
 
     const result = await notificationsCollection.insertOne(newNotificationData as any);

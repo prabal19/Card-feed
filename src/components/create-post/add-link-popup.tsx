@@ -49,6 +49,8 @@ export function AddLinkPopup({ isOpen, onClose, onSubmit }: AddLinkPopupProps) {
        console.error("Error in AddLinkPopup submit:", error);
        toast({ title: "Error", description: "Could not process link information.", variant: "destructive"});
     } finally {
+      setLinkText('');
+      setLinkUrl('');
       setIsSubmitting(false);
     }
   };
@@ -74,19 +76,6 @@ export function AddLinkPopup({ isOpen, onClose, onSubmit }: AddLinkPopupProps) {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="link-text-popup" className="text-right col-span-1">
-              Link Text
-            </Label>
-            <Input
-              id="link-text-popup"
-              value={linkText}
-              onChange={(e) => setLinkText(e.target.value)}
-              className="col-span-3"
-              placeholder="e.g., Visit our website"
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="link-url-popup" className="text-right col-span-1">
               URL
             </Label>
@@ -99,6 +88,20 @@ export function AddLinkPopup({ isOpen, onClose, onSubmit }: AddLinkPopupProps) {
               disabled={isSubmitting}
             />
           </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="link-text-popup" className="text-right col-span-1">
+              Link Text
+            </Label>
+            <Input
+              id="link-text-popup"
+              value={linkText}
+              onChange={(e) => setLinkText(e.target.value)}
+              className="col-span-3"
+              placeholder="e.g., Visit our website"
+              disabled={isSubmitting}
+            />
+          </div>
+          
         </div>
         <DialogFooter>
           <DialogClose asChild>

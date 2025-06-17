@@ -22,8 +22,9 @@ function mapUserToDto(userDoc: any): User {
     _id: stringId, 
     id: userDoc.id || stringId, 
     password: undefined, 
-     profileImageUrl: userDoc.profileImageUrl || undefined,
-    isBlocked: userDoc.isBlocked || false, 
+    profileImageUrl: userDoc.profileImageUrl || undefined,
+    isBlocked: userDoc.isBlocked || false,
+    socialLinks: userDoc.socialLinks || {},  
     createdAt: userDoc.createdAt ? new Date(userDoc.createdAt).toISOString() : undefined,
     updatedAt: userDoc.updatedAt ? new Date(userDoc.updatedAt).toISOString() : undefined,
     authProvider: userDoc.authProvider || (userDoc.googleId ? 'google' : 'email'),
@@ -43,6 +44,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -57,6 +59,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -71,6 +74,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -85,6 +89,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -100,6 +105,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -114,6 +120,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -128,6 +135,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -142,6 +150,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -156,6 +165,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -170,6 +180,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -184,6 +195,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -198,6 +210,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -212,6 +225,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -226,6 +240,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -240,6 +255,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -254,6 +270,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -268,6 +285,7 @@ let mockUsers: User[] = [
     role: 'user',
     authProvider: 'admin_created', 
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -281,6 +299,7 @@ let mockUsers: User[] = [
     role: 'admin' as 'admin',
     authProvider: 'email' as 'email',
     isBlocked: false,
+    socialLinks: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }] : [])
@@ -350,8 +369,18 @@ export async function updateUserProfile(userId: string, data: UpdateUserProfileI
     if (data.lastName !== undefined) updatePayload.lastName = data.lastName;
     if (data.description !== undefined) updatePayload.description = data.description;
     if (data.profileImageUrl !== undefined) {
-      updatePayload.profileImageUrl = data.profileImageUrl||undefined; // data.profileImageUrl can be a data URI
+        updatePayload.profileImageUrl = data.profileImageUrl || undefined; 
     }
+    if (data.socialLinks !== undefined) {
+      const cleanSocialLinks: User['socialLinks'] = {};
+      for (const [key, value] of Object.entries(data.socialLinks)) {
+        if (value && value.trim() !== '') {
+          cleanSocialLinks[key as keyof User['socialLinks']] = value.trim();
+        }
+      }
+      updatePayload.socialLinks = cleanSocialLinks;
+    }
+
 
 
     const result = await usersCollection.findOneAndUpdate(
@@ -406,7 +435,10 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
                 updateOps.$set.profileImageUrl = userData.profileImageUrl || undefined ;
                 needsUpdate = true;
             }
-
+            if (userData.socialLinks && JSON.stringify(existingUserByEmail.socialLinks || {}) !== JSON.stringify(userData.socialLinks)) {
+                updateOps.$set.socialLinks = userData.socialLinks || {};
+                needsUpdate = true;
+            }
 
             if (needsUpdate) {
                 await usersCollection.updateOne({ _id: existingUserByEmail._id }, updateOps);
@@ -429,6 +461,7 @@ export async function createUser(userData: Omit<User, '_id' | 'id'> & { id?: str
             authProvider: userData.authProvider || (userData.googleId ? 'google' : 'email'),
             googleId: userData.googleId,
             isBlocked: userData.isBlocked || false,
+            socialLinks: userData.socialLinks || {},
             createdAt: new Date(),
             updatedAt: new Date(),
         };
@@ -480,13 +513,14 @@ export async function findOrCreateUserFromGoogle({
 
 
     if (userDoc) {
-      const updatePayload: Partial<Omit<User, 'id' | '_id' | 'email' | 'createdAt'>> & { updatedAt: Date, googleId?: string, authProvider?: User['authProvider'] } = {
-        firstName: profileFormData.firstName || userDoc.firstName, // Prefer form data if available
+      const updatePayload: Partial<Omit<User, 'id' | '_id' | 'email' | 'createdAt'>> & { updatedAt: Date, googleId?: string, authProvider?: User['authProvider'], socialLinks?: User['socialLinks'] } = {
+        firstName: profileFormData.firstName || userDoc.firstName, 
         lastName: profileFormData.lastName || userDoc.lastName,
         description: profileFormData.description || userDoc.description,
-        profileImageUrl: profileImageUrlToSave, // Always use the resolved image URL
+        profileImageUrl: profileImageUrlToSave, 
         authProvider: 'google',
-        isBlocked: userDoc.isBlocked || false, 
+        isBlocked: userDoc.isBlocked || false,
+        socialLinks: userDoc.socialLinks || {}, // Preserve existing social links
         updatedAt: new Date(),
       };
       if (googleAuthData.googleId && !userDoc.googleId) {
@@ -527,6 +561,7 @@ export async function findOrCreateUserFromGoogle({
         role: googleAuthData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user',
         authProvider: 'google' as 'google',
         isBlocked: false, 
+        socialLinks: {},
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -604,6 +639,7 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
                  authProvider: mockUser.authProvider || 'admin_created', 
                  isBlocked: mockUser.isBlocked || false,
                  profileImageUrl: mockUser.profileImageUrl || undefined,
+                 socialLinks: mockUser.socialLinks || {},
              };
              if (mockUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
                  userToCreatePayload.password = process.env.ADMIN_PASSWORD;
@@ -649,6 +685,10 @@ export async function seedUsers(): Promise<{ success: boolean, count: number, me
             }
             if (mockUser.profileImageUrl !== undefined && userInDb.profileImageUrl !== mockUser.profileImageUrl) {
                 updateOps.$set.profileImageUrl = mockUser.profileImageUrl || undefined;
+                updateNeeded = true;
+            }
+            if (JSON.stringify(userInDb.socialLinks || {}) !== JSON.stringify(mockUser.socialLinks || {})) {
+                updateOps.$set.socialLinks = mockUser.socialLinks || {};
                 updateNeeded = true;
             }
             if (!userInDb.updatedAt || updateNeeded) {
@@ -709,6 +749,7 @@ export async function createUserByAdmin(userData: CreateUserByAdminInput): Promi
       role: userData.role,
       authProvider: 'admin_created', 
       isBlocked: false, 
+      socialLinks: userData.socialLinks || {},
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -765,11 +806,20 @@ export async function updateUserByAdmin(userId: string, data: UpdateUserByAdminI
     
     if (data.role !== undefined) updatePayload.role = data.role;
     if (data.isBlocked !== undefined) updatePayload.isBlocked = data.isBlocked;
+        if (data.socialLinks !== undefined) {
+      const cleanSocialLinks: User['socialLinks'] = {};
+      for (const [key, value] of Object.entries(data.socialLinks)) {
+        if (value && value.trim() !== '') {
+          cleanSocialLinks[key as keyof User['socialLinks']] = value.trim();
+        }
+      }
+      updatePayload.socialLinks = cleanSocialLinks;
+    }
     
 
     const fieldsToUpdate = Object.keys(updatePayload).filter(key => key !== 'updatedAt');
     // If profileImageUrl is explicitly set (even if to empty string to clear it), consider it a change.
-    if (fieldsToUpdate.length === 0 && !Object.prototype.hasOwnProperty.call(data, 'profileImageUrl')) { 
+     if (fieldsToUpdate.length === 0 && !Object.prototype.hasOwnProperty.call(data, 'profileImageUrl') && !Object.prototype.hasOwnProperty.call(data, 'socialLinks')) {  
       console.log("[updateUserByAdmin] No changed fields provided for update. Fetching current user.");
       const currentUserDoc = await usersCollection.findOne({ _id: new ObjectId(userId) });
       return currentUserDoc ? mapUserToDto(currentUserDoc) : null;
