@@ -8,7 +8,7 @@ import { AppHeader } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BellOff, CheckCheck, Trash2, Loader2, MessageSquare, Heart, ShieldCheck, ShieldX, ExternalLink, Info } from 'lucide-react';
+import { BellOff, CheckCheck, Loader2, MessageSquare, Heart, ShieldCheck, ShieldX, ExternalLink, Info } from 'lucide-react';
 import type { Notification } from '@/types';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -82,31 +82,31 @@ export default function NotificationsPage() {
     setIsProcessing(false);
   };
 
-  const handleDeleteNotification = async (notificationId: string) => {
-    if (!user) return;
-    setIsProcessing(true);
-    const success = await deleteNotification(notificationId, user.id);
-    if (success) {
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      toast({ title: "Notification deleted" });
-    } else {
-      toast({ title: "Failed to delete notification", variant: "destructive" });
-    }
-    setIsProcessing(false);
-  };
+  // const handleDeleteNotification = async (notificationId: string) => {
+  //   if (!user) return;
+  //   setIsProcessing(true);
+  //   const success = await deleteNotification(notificationId, user.id);
+  //   if (success) {
+  //     setNotifications(prev => prev.filter(n => n.id !== notificationId));
+  //     toast({ title: "Notification deleted" });
+  //   } else {
+  //     toast({ title: "Failed to delete notification", variant: "destructive" });
+  //   }
+  //   setIsProcessing(false);
+  // };
 
-  const handleDeleteAll = async () => {
-    if (!user || notifications.length === 0) return;
-    setIsProcessing(true);
-    const success = await deleteAllNotifications(user.id);
-    if (success) {
-      setNotifications([]);
-      toast({ title: "All notifications deleted" });
-    } else {
-      toast({ title: "Failed to delete all notifications", variant: "destructive" });
-    }
-    setIsProcessing(false);
-  };
+  // const handleDeleteAll = async () => {
+  //   if (!user || notifications.length === 0) return;
+  //   setIsProcessing(true);
+  //   const success = await deleteAllNotifications(user.id);
+  //   if (success) {
+  //     setNotifications([]);
+  //     toast({ title: "All notifications deleted" });
+  //   } else {
+  //     toast({ title: "Failed to delete all notifications", variant: "destructive" });
+  //   }
+  //   setIsProcessing(false);
+  // };
   
   if (authLoading || isLoadingNotifications) {
     return (
@@ -235,14 +235,7 @@ export default function NotificationsPage() {
                   >
                     <CheckCheck className="mr-2 h-4 w-4" /> Mark all as read
                   </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={handleDeleteAll} 
-                    disabled={isProcessing}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete all
-                  </Button>
+                
                 </div>
               )}
             </div>
@@ -286,22 +279,11 @@ export default function NotificationsPage() {
                             size="sm"
                             onClick={() => handleMarkAsRead(notification.id)}
                             disabled={isProcessing}
-                            className="text-xs px-2 py-1 h-auto text-primary hover:text-primary/80"
+                            className="text-xs px-2 py-1 h-auto text-primary hover:text-white"
                           >
                             Mark read
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteNotification(notification.id)}
-                          disabled={isProcessing}
-                          className="text-muted-foreground hover:text-destructive h-7 w-7"
-                           title="Delete notification"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                           <span className="sr-only">Delete notification</span>
-                        </Button>
                       </div>
                     </div>
                   </li>
