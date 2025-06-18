@@ -1,4 +1,3 @@
-// extensions/embedPasteHandler.ts
 import { Extension } from '@tiptap/core'
 import { Plugin } from 'prosemirror-state'
 
@@ -9,15 +8,14 @@ export const EmbedPasteHandler = Extension.create({
     return [
       new Plugin({
         props: {
-          handlePaste: async (view, event) => {
+          handlePaste: (view, event) => {
             const pastedText = event.clipboardData?.getData('text/plain')?.trim()
             if (!pastedText || !isValidUrl(pastedText)) return false
 
             event.preventDefault()
-
             const pos = view.state.selection.from
 
-            // Insert "Loading preview..." + empty paragraph (TipTap chain)
+            // Insert "Loading preview..." + empty paragraph
             this.editor
               .chain()
               .focus()
@@ -38,37 +36,37 @@ export const EmbedPasteHandler = Extension.create({
               ])
               .run()
 
-            // Fetch metadata via API
-            const metadata = await extractMetadataFromUrl(pastedText)
-            if (!metadata) return true
+            // Async handling kicked off separately
+            ;(async () => {
+              const metadata = await extractMetadataFromUrl(pastedText)
+              if (!metadata) return
 
-            // Replace "Loading preview..." with embed + new paragraph
-            // We'll find and delete "Loading preview..." manually
-            const docText = this.editor.state.doc.textBetween(0, this.editor.state.doc.content.size, '\n', '\n')
-            const loadingIndex = docText.indexOf('Loading preview...')
-            const fromPos = loadingIndex >= 0 ? loadingIndex : pos
+              const docText = this.editor.state.doc.textBetween(0, this.editor.state.doc.content.size, '\n', '\n')
+              const loadingIndex = docText.indexOf('Loading preview...')
+              const fromPos = loadingIndex >= 0 ? loadingIndex : pos
 
-            this.editor
-              .chain()
-              .focus()
-              .deleteRange({ from: fromPos, to: fromPos + 'Loading preview...'.length })
-              .insertContentAt(fromPos, [
-                {
-                  type: 'linkPreview',
-                  attrs: {
-                    url: pastedText,
-                    title: metadata?.title || pastedText,
-                    description: metadata?.description || '',
-                    image: metadata?.image || '',
+              this.editor
+                .chain()
+                .focus()
+                .deleteRange({ from: fromPos, to: fromPos + 'Loading preview...'.length })
+                .insertContentAt(fromPos, [
+                  {
+                    type: 'linkPreview',
+                    attrs: {
+                      url: pastedText,
+                      title: metadata?.title || pastedText,
+                      description: metadata?.description || '',
+                      image: metadata?.image || '',
+                    },
                   },
-                },
-                {
-                  type: 'paragraph',
-                  content: [],
-                },
-              ])
-              .focus(fromPos + 2) // move cursor into empty paragraph
-              .run()
+                  {
+                    type: 'paragraph',
+                    content: [],
+                  },
+                ])
+                .focus(fromPos + 2)
+                .run()
+            })()
 
             return true
           },

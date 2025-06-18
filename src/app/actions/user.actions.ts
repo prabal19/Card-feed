@@ -345,6 +345,18 @@ export async function getAllUsers(): Promise<User[]> {
   }
 }
 
+export async function getTotalUserCount(): Promise<number> {
+  try {
+    const db = await getDb();
+    const usersCollection = db.collection('users');
+    const count = await usersCollection.countDocuments();
+    return count;
+  } catch (error) {
+    console.error('Error fetching total user count:', error);
+    return 0;
+  }
+}
+
 
 export async function updateUserProfile(userId: string, data: UpdateUserProfileInput): Promise<User | null> {
   try {
@@ -372,14 +384,23 @@ export async function updateUserProfile(userId: string, data: UpdateUserProfileI
         updatePayload.profileImageUrl = data.profileImageUrl || undefined; 
     }
     if (data.socialLinks !== undefined) {
-      const cleanSocialLinks: User['socialLinks'] = {};
-      for (const [key, value] of Object.entries(data.socialLinks)) {
-        if (value && value.trim() !== '') {
-          cleanSocialLinks[key as keyof User['socialLinks']] = value.trim();
-        }
+  const validSocialKeys = ['twitter', 'linkedin', 'github', 'instagram', 'website'] as const;
+  type SocialLinkKey = typeof validSocialKeys[number];
+
+  const cleanSocialLinks: User['socialLinks'] = {};
+
+  for (const [key, value] of Object.entries(data.socialLinks)) {
+    if (validSocialKeys.includes(key as SocialLinkKey)) {
+      const safeKey = key as SocialLinkKey;
+      if (value && value.trim() !== '') {
+        cleanSocialLinks[safeKey] = value.trim();
       }
-      updatePayload.socialLinks = cleanSocialLinks;
     }
+  }
+
+  updatePayload.socialLinks = cleanSocialLinks;
+}
+
 
 
 
@@ -807,14 +828,23 @@ export async function updateUserByAdmin(userId: string, data: UpdateUserByAdminI
     if (data.role !== undefined) updatePayload.role = data.role;
     if (data.isBlocked !== undefined) updatePayload.isBlocked = data.isBlocked;
         if (data.socialLinks !== undefined) {
-      const cleanSocialLinks: User['socialLinks'] = {};
-      for (const [key, value] of Object.entries(data.socialLinks)) {
-        if (value && value.trim() !== '') {
-          cleanSocialLinks[key as keyof User['socialLinks']] = value.trim();
-        }
+  const validSocialKeys = ['twitter', 'linkedin', 'github', 'instagram', 'website'] as const;
+  type SocialLinkKey = typeof validSocialKeys[number];
+
+  const cleanSocialLinks: User['socialLinks'] = {};
+
+  for (const [key, value] of Object.entries(data.socialLinks)) {
+    if (validSocialKeys.includes(key as SocialLinkKey)) {
+      const safeKey = key as SocialLinkKey;
+      if (value && value.trim() !== '') {
+        cleanSocialLinks[safeKey] = value.trim();
       }
-      updatePayload.socialLinks = cleanSocialLinks;
     }
+  }
+
+  updatePayload.socialLinks = cleanSocialLinks;
+}
+
     
 
     const fieldsToUpdate = Object.keys(updatePayload).filter(key => key !== 'updatedAt');

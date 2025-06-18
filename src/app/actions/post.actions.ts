@@ -8,7 +8,7 @@ import { ObjectId, UpdateFilter as MongoUpdateFilter } from 'mongodb'; // Remove
 import { revalidatePath } from 'next/cache';
 import { categories as allStaticCategories } from '@/lib/data';
 import { seedUsers, getUserProfile } from './user.actions'; 
-import { createNotification } from './notification.actions'; 
+import { createNotification , type CreateNotificationParams } from './notification.actions'; 
 import { generateSlug } from '@/lib/utils';
 
 async function getDb() {
@@ -104,6 +104,17 @@ export async function getAllPostsForAdmin(statusFilter?: 'accepted' | 'pending' 
   }
 }
 
+export async function getTotalPostCount(): Promise<number> {
+  try {
+    const db = await getDb();
+    const postsCollection = db.collection('posts');
+    const count = await postsCollection.countDocuments(); // Counts all posts regardless of status
+    return count;
+  } catch (error) {
+    console.error('Error fetching total post count:', error);
+    return 0;
+  }
+}
 
 export async function getPostById(postId: string): Promise<Post | null> {
   try {
@@ -277,15 +288,16 @@ export async function updatePostStatus(postId: string, status: 'accepted' | 'pen
           imageUrl: undefined, 
         };
         if (updatedPost.author.id !== adminActor.id) {
-          await createNotification(
-            updatedPost.author.id,
-            'post_status_change',
-            updatedPost.id,
-            generateSlug(updatedPost.title),
-            updatedPost.title,
-            adminActor,
-            status 
-          );
+          const notificationParams: CreateNotificationParams = {
+            targetUserId: updatedPost.author.id,
+            type: 'post_status_change',
+            actingUser: adminActor,
+            postId: updatedPost.id,
+            postSlug: generateSlug(updatedPost.title),
+            postTitle: updatedPost.title,
+            newStatus: status,
+          };
+          await createNotification(notificationParams);
         }
       }
       return updatedPost;
@@ -365,14 +377,15 @@ export async function likePost(postId: string, userId: string): Promise<Post | n
             name: `${actingUser.firstName} ${actingUser.lastName}`,
             imageUrl: actingUser.profileImageUrl || undefined
           };
-          await createNotification(
-            updatedPost.author.id,
-            'like',
-            updatedPost.id,
-            generateSlug(updatedPost.title),
-            updatedPost.title,
-            actingUserSummary
-          );
+          const notificationParams: CreateNotificationParams = {
+            targetUserId: updatedPost.author.id,
+            type: 'like',
+            actingUser: actingUserSummary,
+            postId: updatedPost.id,
+            postSlug: generateSlug(updatedPost.title),
+            postTitle: updatedPost.title,
+          };
+          await createNotification(notificationParams);
         }
       }
       return updatedPost;
@@ -494,31 +507,31 @@ export async function addComment(commentData: AddCommentInput): Promise<Post | n
         if (commentData.parentId) { // It's a reply
         const parentComment = post.comments.find(c => c._id?.toString() === commentData.parentId || c.id === commentData.parentId);
         if (parentComment && parentComment.author.id !== commentData.authorId) {
-          await createNotification(
-            parentComment.author.id,
-            'comment_reply',
-            updatedPost.id,
-            generateSlug(updatedPost.title),
-            updatedPost.title,
-            actingUserSummary,
-            undefined, // no newStatus for comment_reply
-            commentData.parentId,
-            commentData.text // Text of the reply
-          );
+                  const notificationParams: CreateNotificationParams = {
+            targetUserId: parentComment.author.id,
+            type: 'comment_reply',
+            actingUser: actingUserSummary,
+            postId: updatedPost.id,
+            postSlug: generateSlug(updatedPost.title),
+            postTitle: updatedPost.title,
+            commentId: commentData.parentId, // ID of the parent comment
+            commentText: commentData.text, // Text of the reply
+            parentCommentAuthorId: parentComment.author.id, // Author of the parent comment
+          };
+          await createNotification(notificationParams);
         }
-      } else {
-      if (updatedPost.author?.id && updatedPost.author.id !== commentData.authorId) {
-         await createNotification(
-            updatedPost.author.id,
-            'comment',
-            updatedPost.id,
-            generateSlug(updatedPost.title),
-            updatedPost.title,
-            actingUserSummary,
-              undefined, // no newStatus for comment
-              undefined, // no commentId for top-level comment notification
-              commentData.text
-          );
+      } else { // It's a top-level comment
+        if (updatedPost.author?.id && updatedPost.author.id !== commentData.authorId) {
+           const notificationParams: CreateNotificationParams = {
+              targetUserId: updatedPost.author.id,
+              type: 'comment',
+              actingUser: actingUserSummary,
+              postId: updatedPost.id,
+              postSlug: generateSlug(updatedPost.title),
+              postTitle: updatedPost.title,
+              commentText: commentData.text, // Text of the comment
+            };
+            await createNotification(notificationParams);
       }
     }
       return updatedPost;
@@ -600,17 +613,17 @@ export async function likeComment(postId: string, commentId: string, userId: str
              revalidatePath(`/posts/${postId}/${generateSlug(updatedPost.title)}`);
              // Notification for comment like
             if (!alreadyLiked && commentToUpdate.author.id !== userId) {
-                await createNotification(
-                    commentToUpdate.author.id,
-                    'comment_like',
-                    updatedPost.id,
-                    generateSlug(updatedPost.title),
-                    updatedPost.title,
-                    { id: actingUser.id, name: `${actingUser.firstName} ${actingUser.lastName}`, imageUrl: actingUser.profileImageUrl },
-                    undefined, // no newStatus
-                    commentId,
-                    commentToUpdate.text.substring(0, 50) + "..." // snippet of liked comment
-                );
+                  const notificationParams: CreateNotificationParams = {
+                    targetUserId: commentToUpdate.author.id,
+                    type: 'comment_like',
+                    actingUser: { id: actingUser.id, name: `${actingUser.firstName} ${actingUser.lastName}`, imageUrl: actingUser.profileImageUrl || undefined },
+                    postId: updatedPost.id,
+                    postSlug: generateSlug(updatedPost.title),
+                    postTitle: updatedPost.title,
+                    commentId: commentId,
+                    commentText: commentToUpdate.text.substring(0, 50) + (commentToUpdate.text.length > 50 ? "..." : ""),
+                };
+                await createNotification(notificationParams);
             }
             return updatedPost;
         }
@@ -623,17 +636,17 @@ export async function likeComment(postId: string, commentId: string, userId: str
 
       // Notification for comment like
       if (!alreadyLiked && commentToUpdate.author.id !== userId) {
-        await createNotification(
-          commentToUpdate.author.id,
-          'comment_like',
-          updatedPost.id,
-          generateSlug(updatedPost.title),
-          updatedPost.title,
-          { id: actingUser.id, name: `${actingUser.firstName} ${actingUser.lastName}`, imageUrl: actingUser.profileImageUrl },
-          undefined, // no newStatus
-          commentId,
-          commentToUpdate.text.substring(0, 50) + "..." // snippet of liked comment
-        );
+        const notificationParams: CreateNotificationParams = {
+          targetUserId: commentToUpdate.author.id,
+          type: 'comment_like',
+          actingUser: { id: actingUser.id, name: `${actingUser.firstName} ${actingUser.lastName}`, imageUrl: actingUser.profileImageUrl || undefined },
+          postId: updatedPost.id,
+          postSlug: generateSlug(updatedPost.title),
+          postTitle: updatedPost.title,
+          commentId: commentId,
+          commentText: commentToUpdate.text.substring(0, 50) + (commentToUpdate.text.length > 50 ? "..." : ""),
+        };
+        await createNotification(notificationParams);
       }
       return updatedPost;
     }

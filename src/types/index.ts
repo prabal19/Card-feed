@@ -105,17 +105,31 @@ export interface Notification {
   _id?: string;
   id: string;
   userId: string;
-  type: 'like' | 'comment' |'post_status_change' | 'comment_like' | 'comment_reply';
-  postId: string;
-  postSlug: string;
-  postTitle: string;
-  actingUser: UserSummary;
+  type: 'like' | 'comment' |'post_status_change' | 'comment_like' | 'comment_reply' | 'admin_announcement';
+  actingUser: UserSummary; // User who performed the action (liked, commented, or admin for announcement)
   isRead: boolean;
   createdAt: string;
-  newStatus?: 'accepted' | 'rejected';
-  commentId?: string; // For comment_like and comment_reply
-  commentText?: string; // For comment_reply (text of the reply) or comment_like (text of the liked comment)
-  parentCommentAuthorId?: string 
+
+  // For post-related or announcement title
+  postTitle?: string; 
+
+  // General purpose text, used for comment text or announcement body
+  commentText?: string; 
+
+  // Post-specific (optional, not used for admin_announcement)
+  postId?: string;
+  postSlug?: string;
+  
+  // Comment-specific (optional)
+  commentId?: string; 
+  parentCommentAuthorId?: string; 
+
+  // For post_status_change
+  newStatus?: 'accepted' | 'rejected'; 
+
+  // For admin_announcement specifically
+  externalLink?: string; 
+
 }
 
 export interface UserWithPostCount extends User {
@@ -156,4 +170,31 @@ export interface UpdatePostData {
   excerpt: string;
   categorySlug: string;
   imageUrl?: string;
+}
+
+export type TargetingOptions = 
+  | { type: 'all' }
+  | { type: 'specific'; userIds: string[] }
+  | { type: 'category'; categorySlug: string };
+
+export interface AdminNotificationPayload {
+  title: string;
+  description: string;
+  externalLink?: string;
+  targeting: TargetingOptions;
+}
+
+export interface AdminAnnouncementLogEntry {
+    _id?: string; // MongoDB ObjectId
+    id: string;
+    title: string;
+    description: string; // Storing for potential future full view, though not displayed in list
+    externalLink?: string;
+    targetingType: 'all' | 'specific' | 'category';
+    targetIdentifier: string[] | string | null; // userIds array, categorySlug string, or null for 'all'
+    sentAt: string; // ISO date string
+    status: 'completed' | 'partial_failure' | 'failed';
+    successCount: number;
+    errorCount: number;
+    totalTargeted: number;
 }

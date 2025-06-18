@@ -600,7 +600,7 @@ const editorHasContent = editor && !editor.isEmpty;
     )}
 
 
-      {!isForAdmin && <FormattingToolbar editor={editor} isForAdmin={isForAdmin} onCommand={handleFormattingCommand}/>}
+      {editor && <FormattingToolbar editor={editor} isForAdmin={isForAdmin} onCommand={handleFormattingCommand}/>}
 
       <div className={cn("flex-grow w-full relative", !isForAdmin && "bg-white px-3 sm:py-2 lg:py-4 md:py-6", isForAdmin && "bg-white overflow-y-auto p-4 flex-grow")}>
         <div ref={editorContentWrapperRef} className={cn("max-w-2xl mx-auto relative", isForAdmin && "")}>
@@ -617,7 +617,7 @@ const editorHasContent = editor && !editor.isEmpty;
                 data-quick-insert-menu-item 
                 variant="outline"
                 size="icon"
-                className="rounded-full h-8 w-8 shadow-md bg-background hover:bg-muted"
+                className="rounded-full h-8 w-8 shadow-md bg-background hover:bg-slate-800"
                 onClick={() => {
                   setIsQuickInsertMenuOpen(!isQuickInsertMenuOpen);
                   if (blurTimeoutId) clearTimeout(blurTimeoutId); 

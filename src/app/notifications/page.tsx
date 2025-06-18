@@ -8,7 +8,7 @@ import { AppHeader } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BellOff, CheckCheck, Trash2, Loader2, MessageSquare, Heart, ShieldCheck, ShieldX } from 'lucide-react';
+import { BellOff, CheckCheck, Trash2, Loader2, MessageSquare, Heart, ShieldCheck, ShieldX, ExternalLink, Info } from 'lucide-react';
 import type { Notification } from '@/types';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -155,6 +155,31 @@ export default function NotificationsPage() {
               &quot;{notification.postTitle}&quot;
             </Link>
             <MessageSquare className="inline h-3 w-3 ml-1 text-blue-500" />
+             {notification.commentText && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">Comment: &quot;{notification.commentText}&quot;</p>}
+          </>
+        );
+      case 'comment_like':
+        return (
+          <>
+            <Link href={`/profile/${notification.actingUser.id}`} className="font-semibold hover:text-primary">{notification.actingUser.name}</Link>
+            {' liked your comment on the post: '}
+            <Link href={`/posts/${notification.postId}/${notification.postSlug}#comment-${notification.commentId}`} className="font-semibold hover:text-primary">
+              &quot;{notification.postTitle}&quot;
+            </Link>
+            <Heart className="inline h-3 w-3 ml-1 text-red-500" />
+            {notification.commentText && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">Your comment: &quot;{notification.commentText}&quot;</p>}
+          </>
+        );
+      case 'comment_reply':
+         return (
+          <>
+            <Link href={`/profile/${notification.actingUser.id}`} className="font-semibold hover:text-primary">{notification.actingUser.name}</Link>
+            {' replied to your comment on the post: '}
+            <Link href={`/posts/${notification.postId}/${notification.postSlug}#comment-${notification.commentId}`} className="font-semibold hover:text-primary">
+              &quot;{notification.postTitle}&quot;
+            </Link>
+            <MessageSquare className="inline h-3 w-3 ml-1 text-purple-500" />
+            {notification.commentText && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">Reply: &quot;{notification.commentText}&quot;</p>}
           </>
         );
       case 'post_status_change':
@@ -171,8 +196,24 @@ export default function NotificationsPage() {
             <StatusIcon className={cn("inline h-3 w-3 ml-1", iconColor)} />
           </>
         );
+      case 'admin_announcement':
+        return (
+           <div className="flex flex-col">
+            <div className="flex items-center">
+              <Info className="inline h-4 w-4 mr-2 text-blue-500 shrink-0" />
+              <span className="font-semibold text-primary">{notification.postTitle || 'Announcement'}</span>
+            </div>
+            {notification.commentText && <p className="text-sm text-foreground mt-1">{notification.commentText}</p>}
+            {notification.externalLink && (
+                <a href={notification.externalLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1.5 inline-flex items-center">
+                    Learn More <ExternalLink className="h-3 w-3 ml-1" />
+                </a>
+            )}
+           </div>
+        );
       default:
-        return `Unknown notification type: ${notification.type}`;
+         const exhaustiveCheck: never = notification.type;
+        return `Unknown notification type: ${exhaustiveCheck}`;
     }
   };
 
@@ -211,7 +252,7 @@ export default function NotificationsPage() {
               <div className="text-center py-12 px-6">
                 <BellOff className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
                 <p className="text-xl text-muted-foreground">No notifications yet.</p>
-                <p className="text-sm text-muted-foreground mt-1">Interactions with your posts will appear here.</p>
+                <p className="text-sm text-muted-foreground mt-1">Interactions with your posts or announcements will appear here.</p>
               </div>
             ) : (
               <ul className="divide-y divide-border">
@@ -231,9 +272,9 @@ export default function NotificationsPage() {
                         </Avatar>
                       </Link>
                       <div className="flex-grow">
-                        <p className="text-sm text-foreground">
+                        <div className="text-sm text-foreground">
                           {renderNotificationContent(notification)}
-                        </p>
+                        </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {new Date(notification.createdAt).toLocaleString()}
                         </p>

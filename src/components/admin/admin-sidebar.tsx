@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Newspaper, Users, ListChecks, PlusSquare, LogOut, Settings, Home } from 'lucide-react';
+import { Newspaper, Users, ListChecks, PlusSquare, LogOut, Settings, Home, Send, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
@@ -13,6 +13,8 @@ const navItems = [
   { href: '/admin/users', label: 'Users List', icon: Users },
   { href: '/admin/blogs', label: 'Blogs List', icon: ListChecks },
   { href: '/admin/add-blog', label: 'Add Blog', icon: PlusSquare },
+  { href: '/admin/send-notifications', label: 'Send Notifications', icon: Send },
+  { href: '/admin/notifications-log', label: 'Notifications Log', icon: History },
 ];
 
 export function AdminSidebar() {
