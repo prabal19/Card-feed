@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { categories as staticCategories } from '@/lib/data';
 import type { Post, Category } from '@/types';
 import { PlusCircle, Loader2 } from 'lucide-react';
+import { ResourcesLinks } from '@/components/layout/ResourcesLinks';
 import { getPosts, getCategoriesWithCounts } from '@/app/actions/post.actions'; // Import server action
 
 const POSTS_PER_PAGE = 8;
@@ -110,9 +111,10 @@ export default function HomePage() {
             <div className="hidden lg:block">
               <PopularCategories categories={popularCategoriesData} />
             </div>
+            <ResourcesLinks />
           </aside>
 
-          {/* Middle Content: Ask/Share Input (hidden on <lg screens), Blog Feed, Load More */}
+          {/* Middle Content */}
           <section className="w-full lg:w-2/4 order-2 flex flex-col gap-6">
             
             

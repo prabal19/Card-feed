@@ -8,7 +8,7 @@ export function AppFooter() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div>
             <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary hover:text-primary/90 transition-colors mb-2">
-              <Newspaper className="h-6 w-6" />
+               <img src="/card.jpg" alt="CardFeed Logo" className="h-10 w-10 rounded object-cover" />
               <span>CardFeed</span>
             </Link>
             <p className="text-sm text-muted-foreground">

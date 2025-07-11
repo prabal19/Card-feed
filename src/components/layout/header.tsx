@@ -1,7 +1,7 @@
 // src/components/layout/header.tsx
 'use client';
 
-import { Newspaper, Search, Bell, UserPlus, LogOut, User as UserIcon, Menu, ShieldAlert } from 'lucide-react';
+import { Search, UserPlus, LogOut, User as UserIcon, Menu, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,8 +77,8 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
   return (
     <header className="bg-card border-b sticky top-0 z-50">
       <div className="container mx-auto px-8 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-primary hover:text-primary/90 transition-colors">
-          <Newspaper className="h-7 w-7" />
+        <Link href="/" className="flex items-center gap-0 text-2xl font-bold text-primary hover:text-primary/90 transition-colors">
+          <img src="/card.jpg" alt="CardFeed Logo" className="h-10 w-10 rounded object-cover" />
           <span>CardFeed</span>
         </Link>
 
@@ -119,9 +119,11 @@ export function AppHeader({ popularCategoriesData = [] }: AppHeaderProps) {
             <div className="h-8 w-20 bg-muted rounded-md animate-pulse ml-1"></div>
           ) : user ? (
             <>
-              <Button variant="ghost" size="icon" className="rounded-full relative" asChild>
+              <Button variant="ghost" className="rounded-full relative" asChild>
                 <Link href="/notifications">
-                    <Bell className="h-5 w-5" />
+                    <svg  fill="#181C1F" height="20" icon-name="notification-outline" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 18h1a2 2 0 0 1-4 0h3Zm8-3.792v.673A1.12 1.12 0 0 1 17.883 16H2.117A1.12 1.12 0 0 1 1 14.881v-.673a3.947 3.947 0 0 1 1.738-3.277A2.706 2.706 0 0 0 3.926 8.7V7.087a6.07 6.07 0 0 1 12.138 0l.01 1.613a2.7 2.7 0 0 0 1.189 2.235A3.949 3.949 0 0 1 19 14.208Zm-1.25 0a2.7 2.7 0 0 0-1.188-2.242A3.956 3.956 0 0 1 14.824 8.7V7.088a4.819 4.819 0 1 0-9.638 0v1.615a3.956 3.956 0 0 1-1.738 3.266 2.7 2.7 0 0 0-1.198 2.239v.542h15.5v-.542Z"></path>
+                  </svg>
                     {unreadNotifications > 0 && (
                         <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
