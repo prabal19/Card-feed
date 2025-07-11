@@ -1,12 +1,11 @@
-
 // src/components/blog/popular-categories.tsx
 'use client';
 
 import type { Category } from '@/types'; 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BarChartBig, ChevronRight, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon
+import { ChevronRight } from 'lucide-react';
+import { Separator } from '../ui/separator';
 
 interface CategoryWithCount extends Category {
   postCount: number;
@@ -21,32 +20,28 @@ export function PopularCategories({ categories, count = 5 }: PopularCategoriesPr
   const displayedCategories = categories.slice(0, count);
 
   return (
-    <Card className=" rounded-3xl">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <BarChartBig className="h-5 w-5 text-primary" />
+    <div>
+      <h3 className="text-sm font-bold uppercase text-muted-foreground tracking-wider mb-3">
           Popular Categories
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+      </h3>
+      <div>
         {displayedCategories.length > 0 ? (
           <ul className="space-y-1">
             {displayedCategories.map((category) => (
               <li key={category.id}>
                 <Link
                   href={`/category/${category.slug}`} 
-                  className="flex items-center gap-3 p-2 rounded-md hover:bg-primary/10 transition-colors cursor-pointer group"
+                  className="flex items-center gap-3 p-2 -ml-2 rounded-none hover:bg-accent transition-colors cursor-pointer group"
                 >
-                  <div className="relative w-10 h-10 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">
+                  <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 bg-muted flex items-center justify-center">
                     <Image
                       src={category.src || 'https://placehold.co/40x40.png'}
                       alt={category.name}
-                      fill
-                      sizes="40px"
+                      width={32}
+                      height={32}
                       className="object-cover"
                       data-ai-hint={category.hint || category.slug.replace(/-/g, ' ').substring(0, 20)}
                     />
-
                   </div>
                   <div className="flex-grow">
                     <span className="text-sm font-medium group-hover:text-primary transition-colors">{category.name}</span>
@@ -60,7 +55,7 @@ export function PopularCategories({ categories, count = 5 }: PopularCategoriesPr
         ) : (
           <p className="text-sm text-muted-foreground">No categories to display.</p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

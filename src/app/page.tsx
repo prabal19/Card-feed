@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 'use client'; // Keep 'use client' for useState, useEffect, and event handlers
 
@@ -7,12 +8,15 @@ import { AppHeader as AppHeaderComponent } from '@/components/layout/header';
 import { BlogCard } from '@/components/blog/blog-card';
 import { TrendingSidebar } from '@/components/blog/trending-sidebar';
 import { PopularCategories } from '@/components/blog/popular-categories';
+import { TopAuthorsSidebar } from '@/components/blog/top-authors-sidebar';
+import { ResourcesSidebar } from '@/components/blog/resources-sidebar';
 import { Button } from '@/components/ui/button';
 import { categories as staticCategories } from '@/lib/data';
-import type { Post, Category } from '@/types';
+import type { Post, Category, TopAuthor } from '@/types';
 import { PlusCircle, Loader2 } from 'lucide-react';
-import { ResourcesLinks } from '@/components/layout/ResourcesLinks';
-import { getPosts, getCategoriesWithCounts } from '@/app/actions/post.actions'; // Import server action
+import { getPosts, getCategoriesWithCounts } from '@/app/actions/post.actions';
+import { getTopAuthors } from '@/app/actions/user.actions';
+import { Separator } from '@/components/ui/separator';
 
 const POSTS_PER_PAGE = 8;
 
@@ -23,8 +27,8 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [dynamicCategories, setDynamicCategories] = useState<Array<{ category: string, count: number }>>([]);
+  const [topAuthors, setTopAuthors] = useState<TopAuthor[]>([]);
 
-  // This selectedCategory state might be used for future category filtering.
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const fetchPosts = async (page: number, loadMore = false) => {
@@ -37,26 +41,29 @@ export default function HomePage() {
       setHasMorePosts(hasMore);
     } catch (error) {
       console.error("Failed to fetch posts:", error);
-      // Handle error state in UI if necessary
     } finally {
       if (loadMore) setIsLoadingMore(false);
       else setIsLoading(false);
     }
   };
   
-  const fetchCategoryData = async () => {
-    try {
-      const catCounts = await getCategoriesWithCounts();
+  const fetchSidebarData = async () => {
+     try {
+      const [catCounts, authors] = await Promise.all([
+        getCategoriesWithCounts(),
+        getTopAuthors(5)
+      ]);
       setDynamicCategories(catCounts);
+      setTopAuthors(authors);
     } catch (error) {
-      console.error("Failed to fetch category counts:", error);
+      console.error("Failed to fetch sidebar data:", error);
     }
   };
 
   useEffect(() => {
     fetchPosts(1);
-    fetchCategoryData();
-  }, [selectedCategory]); // Refetch when category changes
+    fetchSidebarData();
+  }, [selectedCategory]);
 
   const handleLoadMore = () => {
     if (hasMorePosts && !isLoadingMore) {
@@ -66,13 +73,11 @@ export default function HomePage() {
     }
   };
 
-  // Memoize trending posts based on likes from the fetched posts
   const trendingPosts = useMemo(() => {
     return [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
   }, [posts]);
 
   const popularCategoriesData = useMemo(() => {
-    // Map dynamic category counts to the structure PopularCategories expects
     return staticCategories.map(sc => {
       const dynamicCat = dynamicCategories.find(dc => dc.category === sc.slug);
       return {
@@ -80,7 +85,7 @@ export default function HomePage() {
         postCount: dynamicCat ? dynamicCat.count : 0,
       };
     }).sort((a,b) => b.postCount - a.postCount);
-  }, [dynamicCategories, staticCategories]);
+  }, [dynamicCategories]);
 
 
   if (isLoading && currentPage === 1) {
@@ -100,32 +105,36 @@ export default function HomePage() {
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeaderComponent popularCategoriesData={popularCategoriesData} />
       <main className="flex-grow container mx-auto px-4 py-8 pt-20 md:pt-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Left Sidebar: Create Post & Popular Categories (PopularCategories hidden on <lg screens, moved to drawer) */}
-          <aside className="w-full lg:w-1/4 space-y-6 order-1 lg:sticky lg:top-[calc(theme(spacing.4)_+_65px_+_env(safe-area-inset-top))] h-fit"> {/* Adjusted sticky top */}
-            <Link href="/create-post" passHref>
-              <Button className="w-full rounded-3xl">
-                <PlusCircle className="mr-2 h-5 w-5" /> Create Post
-              </Button>
-            </Link>
-            <div className="hidden lg:block">
-              <PopularCategories categories={popularCategoriesData} />
+        <div className="grid grid-cols-12 gap-8 relative">
+          
+          {/* Left Sidebar */}
+          <aside className="hidden lg:block lg:col-span-3">
+             <div className="sticky top-20"> {/* Header height approx 5rem = 80px */}
+                <div className="space-y-6 h-[calc(100vh-6rem)] overflow-y-auto pr-4">
+                    <Link href="/create-post" passHref>
+                        <Button className="w-full">
+                            <PlusCircle className="mr-2 h-5 w-5" /> Create Post
+                        </Button>
+                    </Link>
+                    <Separator />
+                    <PopularCategories categories={popularCategoriesData} />
+                    <Separator />
+                    <ResourcesSidebar />
+                </div>
             </div>
-            <ResourcesLinks />
           </aside>
 
-          {/* Middle Content */}
-          <section className="w-full lg:w-2/4 order-2 flex flex-col gap-6">
-            
-            
+          {/* Separator */}
+          <div className="hidden lg:block absolute top-0 bottom-0 left-[25%] w-px bg-border"></div>
+
+          {/* Main Content */}
+          <section className="col-span-12 lg:col-span-6 flex flex-col gap-4">
             {posts.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6">
-                {posts.map((post: Post) => (
-                  <BlogCard key={post.id} post={post} />
-                ))}
-              </div>
+              posts.map((post: Post) => (
+                <BlogCard key={post.id} post={post} />
+              ))
             ) : (
-              <div className="text-center py-12">
+              <div className="text-center py-12 border border-border">
                 <h2 className="text-2xl font-semibold mb-2">No posts found</h2>
                 <p className="text-muted-foreground">
                   Check back later for new content or try a different category!
@@ -137,7 +146,7 @@ export default function HomePage() {
               <Button
                 onClick={handleLoadMore}
                 variant="outline"
-                className="mt-8 self-center text-black bg-green-300 hover:bg-green-400"
+                className="mt-4 self-center"
                 disabled={isLoadingMore}
               >
                 {isLoadingMore ? (
@@ -152,9 +161,18 @@ export default function HomePage() {
             )}
           </section>
 
-          {/* Right Sidebar: Trending Posts */}
-          <aside className="w-full lg:w-1/4 order-3 lg:sticky lg:top-[calc(theme(spacing.4)_+_65px_+_env(safe-area-inset-top))] h-fit"> {/* Adjusted sticky top */}
-            <TrendingSidebar trendingPosts={trendingPosts} />
+          {/* Separator */}
+          <div className="hidden lg:block absolute top-0 bottom-0 left-[75%] w-px bg-border"></div>
+
+          {/* Right Sidebar */}
+          <aside className="hidden lg:block lg:col-span-3">
+             <div className="sticky top-20"> {/* Header height approx 5rem = 80px */}
+                <div className="space-y-6 h-[calc(100vh-6rem)] overflow-y-auto pl-4 overflow-x-hidden">
+                    <TrendingSidebar trendingPosts={trendingPosts} />
+                    <Separator />
+                    <TopAuthorsSidebar authors={topAuthors} />
+                </div>
+             </div>
           </aside>
         </div>
       </main>

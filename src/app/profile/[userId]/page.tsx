@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, UserCircle, ShieldCheck, AlertTriangle, XOctagon, Twitter, Linkedin, Github, Instagram, Link2 as WebsiteIcon} from 'lucide-react';
-import { useForm, type SubmitHandler, Controller } from 'react-hook-form';
+import { useForm, type SubmitHandler, Controller, FieldPath  } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { User, UpdateUserProfileInput, Post } from '@/types';
@@ -170,7 +170,7 @@ export default function UserProfilePage() {
       });
       setShowSocialInputs(initialShowInputs);
     }
-  }, [profileUser, form.reset]); // form.reset is stable
+  }, [profileUser, form]); // form.reset is stable
 
 
   const acceptedPosts = useMemo(() => allAuthorPosts.filter(post => post.status === 'accepted'), [allAuthorPosts]);
@@ -238,11 +238,15 @@ export default function UserProfilePage() {
     }
   };
 
-    const handleSocialCheckboxChange = (platformKey: string, checked: boolean) => {
+  const handleSocialCheckboxChange = (platformKey: 'twitter' | 'linkedin' | 'github' | 'instagram' | 'website', checked: boolean) => {
     setShowSocialInputs(prev => ({ ...prev, [platformKey]: checked }));
     if (!checked) {
-      // Clear the input if checkbox is unchecked
-      form.setValue(`socialLinks.${platformKey as keyof ProfileFormValues['socialLinks']}`, '', { shouldDirty: true, shouldValidate: true });
+      const fieldName = `socialLinks.${platformKey}` as FieldPath<ProfileFormValues>;
+      form.setValue(
+        fieldName,
+        '',
+        { shouldDirty: true, shouldValidate: true }
+      );
     }
   };
 
@@ -396,7 +400,7 @@ export default function UserProfilePage() {
                     {showSocialInputs[platform.key] && (
                       <>
                         <Controller
-                          name={`socialLinks.${platform.key as keyof ProfileFormValues['socialLinks']}`}
+                          name={`socialLinks.${platform.key}`}
                           control={form.control}
                           render={({ field }) => (
                             <Input
@@ -408,9 +412,9 @@ export default function UserProfilePage() {
                             />
                           )}
                         />
-                        {form.formState.errors.socialLinks?.[platform.key as keyof ProfileFormValues['socialLinks']] && (
+                        {form.formState.errors.socialLinks?.[platform.key] && (
                           <p className="text-destructive text-xs mt-1">
-                            {form.formState.errors.socialLinks[platform.key as keyof ProfileFormValues['socialLinks']]?.message}
+                            {form.formState.errors.socialLinks[platform.key]?.message}
                           </p>
                         )}
                       </>

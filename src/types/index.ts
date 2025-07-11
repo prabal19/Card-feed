@@ -198,3 +198,8 @@ export interface AdminAnnouncementLogEntry {
     errorCount: number;
     totalTargeted: number;
 }
+
+export interface TopAuthor {
+  author: UserSummary;
+  postCount: number;
+}

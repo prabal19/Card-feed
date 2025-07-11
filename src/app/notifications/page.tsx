@@ -16,8 +16,6 @@ import {
   getNotificationsForUser,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  deleteNotification,
-  deleteAllNotifications,
 } from '@/app/actions/notification.actions';
 import { cn } from '@/lib/utils';
 
@@ -82,31 +80,7 @@ export default function NotificationsPage() {
     setIsProcessing(false);
   };
 
-  // const handleDeleteNotification = async (notificationId: string) => {
-  //   if (!user) return;
-  //   setIsProcessing(true);
-  //   const success = await deleteNotification(notificationId, user.id);
-  //   if (success) {
-  //     setNotifications(prev => prev.filter(n => n.id !== notificationId));
-  //     toast({ title: "Notification deleted" });
-  //   } else {
-  //     toast({ title: "Failed to delete notification", variant: "destructive" });
-  //   }
-  //   setIsProcessing(false);
-  // };
 
-  // const handleDeleteAll = async () => {
-  //   if (!user || notifications.length === 0) return;
-  //   setIsProcessing(true);
-  //   const success = await deleteAllNotifications(user.id);
-  //   if (success) {
-  //     setNotifications([]);
-  //     toast({ title: "All notifications deleted" });
-  //   } else {
-  //     toast({ title: "Failed to delete all notifications", variant: "destructive" });
-  //   }
-  //   setIsProcessing(false);
-  // };
   
   if (authLoading || isLoadingNotifications) {
     return (
@@ -212,8 +186,7 @@ export default function NotificationsPage() {
            </div>
         );
       default:
-         const exhaustiveCheck: never = notification.type;
-        return `Unknown notification type: ${exhaustiveCheck}`;
+         return `Unknown notification type.`;
     }
   };
 

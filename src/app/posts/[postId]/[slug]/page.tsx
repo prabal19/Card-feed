@@ -338,13 +338,13 @@ export default function PostPage() {
             <Separator className="my-8" />
 
             <div className="flex items-center justify-start gap-2 sm:gap-4 mb-8">
-              <Button variant="ghost" size="sm" onClick={handlePostLike} className={cn("text-muted-foreground hover:text-primary", isPostLikedByCurrentUser && "text-red-500 hover:text-red-600")}>
+              <Button variant="ghost" size="sm" onClick={handlePostLike} className={cn("", isPostLikedByCurrentUser && "text-red-500 hover:text-red-600")}>
                 <Heart className={cn("h-5 w-5 mr-1.5", isPostLikedByCurrentUser ? "fill-current text-red-500" : "fill-none", showPostLikeAnimation && "animate-heartBeat")} />
                 {post.likes || 0} Likes
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                  <Button variant="ghost" size="sm" className="">
                     <Share2 className="h-5 w-5 mr-1.5" /> Share ({post.shares || 0})
                   </Button>
                 </DropdownMenuTrigger>
@@ -358,7 +358,7 @@ export default function PostPage() {
               </DropdownMenu>
             </div>
 
-            <section>
+            <section id="comments-section" className="scroll-mt-24">
               <h2 className="text-2xl font-semibold text-primary mb-4">Comments ({topLevelComments.length})</h2>
               {user && (
                 <div className="mb-6">
@@ -395,10 +395,10 @@ export default function PostPage() {
                             </div>
                             <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{comment.text}</p>
                             <div className="flex items-center gap-2 mt-2">
-                              <Button variant="ghost" size="xs" onClick={() => handleCommentLike(comment.id)} className={cn("text-xs px-1 py-0.5 h-auto bg-white text-black hover:text-white", isCommentLikedByCurrentUser && "text-red-500")}>
+                              <Button variant="ghost" size="sm" onClick={() => handleCommentLike(comment.id)} className={cn("text-xs px-1 py-0.5 h-auto bg-white hover:text-red-700 ", isCommentLikedByCurrentUser && "text-red-500")}>
                                 <Heart className={cn("h-3.5 w-3.5 mr-1", isCommentLikedByCurrentUser && "fill-current")}/> {comment.likes || 0}
                               </Button>
-                              <Button variant="ghost" size="xs" onClick={() => setReplyToCommentId(replyToCommentId === comment.id ? null : comment.id)} className="text-xs px-1 py-0.5 h-auto bg-white text-black hover:text-white">
+                              <Button variant="ghost" size="sm" onClick={() => setReplyToCommentId(replyToCommentId === comment.id ? null : comment.id)} className="text-xs px-1 py-0.5 h-auto bg-white">
                                 Reply
                               </Button>
                             </div>
@@ -443,12 +443,12 @@ export default function PostPage() {
                                   </Link>
                                   <div className="flex-1">
                                     <div className="flex items-center justify-between">
-                                      <Link href={reply.author.id ? `/profile/${reply.author.id}` : '#'}><span className="font-semibold text-xs text-card-foreground hover:text-primary">{reply.author.name}</span></Link>
+                                      <Link href={reply.author.id ? `/profile/${reply.author.id}` : '#'}><span className="font-semibold text-xs text-card-foreground">{reply.author.name}</span></Link>
                                       <span className="text-xs text-muted-foreground">{new Date(reply.date).toLocaleDateString()}</span>
                                     </div>
                                     <p className="text-xs text-foreground mt-0.5 whitespace-pre-wrap">{reply.text}</p>
                                      <div className="flex items-center gap-1.5 mt-1.5">
-                                      <Button variant="ghost" size="xs" onClick={() => handleCommentLike(reply.id)} className={cn("text-xs px-1 py-0.5 h-auto text-muted-foreground hover:text-primary", isReplyLiked && "text-red-500")}>
+                                      <Button variant="ghost" size="sm" onClick={() => handleCommentLike(reply.id)} className={cn("text-xs px-1 py-0.5 h-auto", isReplyLiked && "text-red-500")}>
                                         <Heart className={cn("h-3 w-3 mr-0.5", isReplyLiked && "fill-current")}/> {reply.likes || 0}
                                       </Button>
                                     </div>

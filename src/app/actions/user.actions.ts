@@ -3,7 +3,7 @@
 'use server';
 
 import clientPromise from '@/lib/mongodb';
-import type { User, UpdateUserProfileInput, CreateUserByAdminInput, UpdateUserByAdminInput } from '@/types';
+import type { User, UpdateUserProfileInput, CreateUserByAdminInput, UpdateUserByAdminInput, TopAuthor } from '@/types';
 import type { GoogleAuthData, CompleteProfileFormData as ClientCompleteProfileFormData } from '@/contexts/auth-context';
 import { ObjectId } from 'mongodb';
 import { revalidatePath } from 'next/cache';
@@ -952,4 +952,23 @@ export async function verifyAdminCredentials(email: string, password: string): P
   }
 
   return null;
+}
+
+export async function getTopAuthors(limit = 5): Promise<TopAuthor[]> {
+  try {
+    const db = await getDb();
+    const postsCollection = db.collection('posts');
+    const aggregationResult = await postsCollection.aggregate([
+      { $match: { status: 'accepted' } }, // Only count accepted posts
+      { $group: { _id: "$author.id", author: { $first: "$author" }, postCount: { $sum: 1 } } },
+      { $sort: { postCount: -1 } },
+      { $limit: limit },
+      { $project: { _id: 0, author: 1, postCount: 1 } } // Reshape the output
+    ]).toArray();
+
+    return aggregationResult as TopAuthor[];
+  } catch (error) {
+    console.error('Error fetching top authors:', error);
+    return [];
+  }
 }

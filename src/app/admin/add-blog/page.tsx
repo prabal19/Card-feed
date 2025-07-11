@@ -4,7 +4,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { CreatePostContent } from '@/app/create-post/page'; 
+import { CreatePostContent } from '@/components/create-post/create-post-content'; 
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
