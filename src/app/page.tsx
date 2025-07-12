@@ -125,7 +125,7 @@ export default function HomePage() {
           </aside>
 
           {/* Separator */}
-          <div className="hidden lg:block absolute top-0 bottom-0 left-[25%] w-px bg-border"></div>
+          <div className="hidden lg:block absolute top-0 bottom-0 left-[24%] w-px bg-border"></div>
 
           {/* Main Content */}
           <section className="col-span-12 lg:col-span-6 flex flex-col gap-4">
@@ -161,8 +161,6 @@ export default function HomePage() {
             )}
           </section>
 
-          {/* Separator */}
-          <div className="hidden lg:block absolute top-0 bottom-0 left-[75%] w-px bg-border"></div>
 
           {/* Right Sidebar */}
           <aside className="hidden lg:block lg:col-span-3">

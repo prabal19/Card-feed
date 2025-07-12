@@ -1,7 +1,17 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Newspaper } from 'lucide-react';
 
 export function AppFooter() {
+  const pathname = usePathname();
+
+  // Do not render the footer on the homepage
+  if (pathname === '/') {
+    return null;
+  }
+
   return (
     <footer className="bg-card border-t text-card-foreground">
       <div className="container mx-auto px-8 py-6 md:py-8"> {/* Adjusted padding */}

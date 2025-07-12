@@ -8,18 +8,23 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { AppHeader } from '@/components/layout/header';
 import { TrendingSidebar } from '@/components/blog/trending-sidebar';
+import { TopAuthorsSidebar } from '@/components/blog/top-authors-sidebar';
+import { ResourcesSidebar } from '@/components/blog/resources-sidebar';
+import { PopularCategories } from '@/components/blog/popular-categories';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { CalendarDays, Heart, Share2, MessageCircle, Send, User as UserIcon, Loader2, LinkIcon, Mail, Image as ImageIcon, CornerDownRight, Eye, EyeOff } from 'lucide-react';
-import type { Post, Comment as CommentType, UserSummary } from '@/types';
-import { getPostById, getPosts, likePost, sharePost, addComment, likeComment } from '@/app/actions/post.actions';
+import { CalendarDays, Heart, Share2, MessageCircle, Send, User as UserIcon, Loader2, LinkIcon, Mail, Image as ImageIcon, CornerDownRight, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import type { Post, Comment as CommentType, UserSummary, TopAuthor } from '@/types';
+import { getPostById, getPosts, likePost, sharePost, addComment, likeComment, getCategoriesWithCounts } from '@/app/actions/post.actions';
+import { getTopAuthors } from '@/app/actions/user.actions';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { cn, generateSlug } from '@/lib/utils';
+import { categories as staticCategories } from '@/lib/data';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,14 +40,13 @@ const COMMENTS_INITIAL_LIMIT = 5;
 const REPLIES_INITIAL_LIMIT = 2;
 
 
-export default function PostPage() {
+function PostContent() {
   const params = useParams<{ postId: string; slug: string }>();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const [post, setPost] = useState<Post | null>(null);
-  const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
   const [isLoadingPage, setIsLoadingPage] = useState(true);
 
   const [isPostLikedByCurrentUser, setIsPostLikedByCurrentUser] = useState(false);
@@ -63,12 +67,15 @@ export default function PostPage() {
       if (!params.postId) return;
       setIsLoadingPage(true);
       try {
-        const [fetchedPost, fetchedTrendingPostsData] = await Promise.all([
-          getPostById(params.postId),
-          getPosts(1, 5)
-        ]);
+        const fetchedPost = await getPostById(params.postId);
 
         if (fetchedPost) {
+          // Redirect if slug is incorrect for SEO
+          const correctSlug = generateSlug(fetchedPost.title);
+          if (params.slug !== correctSlug) {
+            router.replace(`/posts/${fetchedPost.id}/${correctSlug}`);
+          }
+
           setPost(fetchedPost);
           if (user && fetchedPost.likedBy) {
             setIsPostLikedByCurrentUser(fetchedPost.likedBy.includes(user.id));
@@ -77,7 +84,6 @@ export default function PostPage() {
           toast({ title: "Post not found", variant: "destructive" });
           router.push('/');
         }
-        setTrendingPosts(fetchedTrendingPostsData.posts);
       } catch (error) {
         console.error("Error fetching post data:", error);
         toast({ title: "Failed to load post", description: String(error), variant: "destructive" });
@@ -98,7 +104,6 @@ export default function PostPage() {
     const currentLikes = post.likes || 0;
     const newLikeCount = newLikedState ? currentLikes + 1 : Math.max(0, currentLikes - 1);
 
-    // Optimistic UI update for post like
     setIsPostLikedByCurrentUser(newLikedState);
     setPost(p => p ? { ...p, likes: newLikeCount } : null);
     if (newLikedState) {
@@ -109,13 +114,12 @@ export default function PostPage() {
     try {
       const updatedPost = await likePost(post.id, user.id);
       if (updatedPost) {
-        setPost(updatedPost); // Sync with server state
+        setPost(updatedPost); 
         if (user && updatedPost.likedBy) setIsPostLikedByCurrentUser(updatedPost.likedBy.includes(user.id));
       } else throw new Error("Failed to update like on server");
     } catch (error) {
-      // Revert optimistic update on error
       setIsPostLikedByCurrentUser(!newLikedState);
-      setPost(p => p ? { ...p, likes: currentLikes } : null); // Revert to original like count
+      setPost(p => p ? { ...p, likes: currentLikes } : null);
       toast({ title: "Error updating like", description: String(error), variant: "destructive" });
     }
   };
@@ -162,10 +166,10 @@ export default function PostPage() {
       if (updatedPost) {
         setPost(updatedPost);
         if (parentId) {
-          setReplyToCommentId(null); // Close reply form
+          setReplyToCommentId(null); 
           setReplyText('');
         } else {
-          setNewCommentText(''); // Clear main comment input
+          setNewCommentText('');
         }
       } else throw new Error("Failed to add comment/reply on server");
     } catch (error) {
@@ -189,7 +193,6 @@ export default function PostPage() {
     const currentLikes = comment.likes || 0;
     const newLikes = isCurrentlyLiked ? currentLikes - 1 : currentLikes + 1;
 
-    // Optimistic UI update
     setPost(prevPost => {
         if (!prevPost) return null;
         const updatedComments = prevPost.comments.map(c => {
@@ -211,21 +214,19 @@ export default function PostPage() {
     try {
         const updatedPostFromServer = await likeComment(post.id, commentId, user.id);
         if (updatedPostFromServer) {
-            setPost(updatedPostFromServer); // Sync with server
+            setPost(updatedPostFromServer);
         } else {
             throw new Error("Failed to update comment like on server.");
         }
     } catch (error) {
-        // Revert optimistic update on error
          setPost(prevPost => {
             if (!prevPost) return null;
+            const commentToRevert = post.comments.find(c => c.id === commentId); // Find original comment state before optimistic update
+            if (!commentToRevert) return prevPost; // Should not happen
+
             const revertedComments = prevPost.comments.map(c => {
-                if (c.id === commentId) { // This is the comment we tried to update
-                    return { // Revert to original like count and likedBy
-                        ...c,
-                        likes: currentLikes, // Original likes
-                        likedBy: comment.likedBy // Original likedBy (from before optimistic update)
-                    };
+                if (c.id === commentId) {
+                    return { ...c, likes: commentToRevert.likes, likedBy: commentToRevert.likedBy };
                 }
                 return c;
             });
@@ -263,30 +264,22 @@ export default function PostPage() {
 
   if (isLoadingPage || authLoading) {
     return (
-      <>
-        <AppHeader />
-        <main className="flex-grow container mx-auto px-6 lg:px-8 py-8 pt-28 md:pt-8">
-          <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-          </div>
-        </main>
-      </>
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
     );
   }
 
   if (!post) {
     return (
-      <>
-        <AppHeader />
-        <main className="flex-grow container mx-auto px-6 lg:px-8 py-8 pt-28 md:pt-8 text-center">
-          <UserIcon className="h-24 w-24 mx-auto text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-semibold">Post not found</h1>
-          <p className="text-muted-foreground">The post you are looking for does not exist.</p>
-          <Button asChild className="mt-6">
-            <Link href="/">Go to Homepage</Link>
-          </Button>
-        </main>
-      </>
+      <div className="text-center py-10">
+        <UserIcon className="h-24 w-24 mx-auto text-muted-foreground mb-4" />
+        <h1 className="text-2xl font-semibold">Post not found</h1>
+        <p className="text-muted-foreground">The post you are looking for does not exist.</p>
+        <Button asChild className="mt-6">
+          <Link href="/">Go to Homepage</Link>
+        </Button>
+      </div>
     );
   }
 
@@ -294,196 +287,241 @@ export default function PostPage() {
   const visibleTopLevelComments = topLevelComments.slice(0, visibleCommentsCount);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <AppHeader />
-      <main className="flex-grow container mx-auto px-6 lg:px-8 py-8 pt-28 md:pt-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          <article className="w-full lg:w-2/3 bg-card shadow-xl rounded-lg p-6 md:p-8">
-            {post.imageUrl && post.imageUrl.startsWith('http') && (
-              <div className="relative w-full h-80 md:h-[500px] mb-6 rounded-md overflow-hidden">
-                <Image src={post.imageUrl} alt={post.title} layout="fill" objectFit="cover" priority data-ai-hint="blog post image"/>
-              </div>
-            )}
-             {post.imageUrl && post.imageUrl.startsWith('data:image') && (
-              <div className="relative w-full h-80 md:h-[500px] mb-6 rounded-md overflow-hidden">
-                <img src={post.imageUrl} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} data-ai-hint="blog post image"/>
-              </div>
-            )}
-            {!post.imageUrl && (
-                <div className="relative w-full h-80 md:h-[500px] mb-6 rounded-md overflow-hidden bg-muted flex items-center justify-center">
-                    <ImageIcon className="h-24 w-24 text-muted-foreground" />
-                </div>
-            )}
-            <header className="mb-6">
-               <Badge variant="outline" className="mb-2 self-start bg-accent/10 text-black border-accent/50">{post.category.charAt(0).toUpperCase() + post.category.slice(1)}</Badge>
-              <h1 className="text-3xl md:text-4xl font-bold text-primary mb-3">{post.title}</h1>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Link href={authorLinkPath} className="flex items-center gap-2 hover:text-primary">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={post.author.imageUrl} alt={post.author.name} className="object-cover"/>
-                    <AvatarFallback>{post.author.name?.substring(0,1) || 'A'}</AvatarFallback>
-                  </Avatar>
-                  <span>{post.author.name}</span>
-                </Link>
-                <span className="hidden sm:inline">•</span>
-                <div className="flex items-center gap-1">
-                  <CalendarDays className="h-4 w-4" />
-                  <span>{new Date(post.date).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </header>
+    <article className="bg-secondary rounded-lg p-3 sm:p-4">
+      <header className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => router.back()}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+           <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Link href={authorLinkPath} className="flex items-center gap-2 hover:underline">
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={post.author.imageUrl} alt={post.author.name} className="object-cover"/>
+                <AvatarFallback>{post.author.name?.substring(0,1) || 'A'}</AvatarFallback>
+              </Avatar>
+              <span className="font-bold text-foreground">{post.author.name}</span>
+            </Link>
+            <span>•</span>
+            <span>{new Date(post.date).toLocaleDateString()}</span>
+          </div>
+        </div>
+        
+        <div className="ml-12 space-y-2">
+            <Badge variant="outline" className="self-start">{staticCategories.find(c => c.slug === post.category)?.name || post.category}</Badge>
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">{post.title}</h1>
+        </div>
+      </header>
 
-            <Separator className="my-6" />
-            <div className="prose max-w-none prose-p:text-foreground prose-headings:text-primary text-foreground whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: post.content }} />
-            <Separator className="my-8" />
+      <div className="ml-12 mt-4 space-y-4">
+        {post.imageUrl && post.imageUrl.startsWith('http') && (
+          <div className="relative w-full max-h-[70vh] rounded-md overflow-hidden">
+            <Image src={post.imageUrl} alt={post.title} width={800} height={600} className="w-full h-auto object-contain" priority data-ai-hint="blog post image"/>
+          </div>
+        )}
+        {post.imageUrl && post.imageUrl.startsWith('data:image') && (
+          <div className="relative w-full max-h-[70vh] rounded-md overflow-hidden">
+            <img src={post.imageUrl} alt={post.title} style={{ width: '100%', height: 'auto', objectFit: 'contain' }} data-ai-hint="blog post image"/>
+          </div>
+        )}
 
-            <div className="flex items-center justify-start gap-2 sm:gap-4 mb-8">
-              <Button variant="ghost" size="sm" onClick={handlePostLike} className={cn("", isPostLikedByCurrentUser && "text-red-500 hover:text-red-600")}>
-                <Heart className={cn("h-5 w-5 mr-1.5", isPostLikedByCurrentUser ? "fill-current text-red-500" : "fill-none", showPostLikeAnimation && "animate-heartBeat")} />
-                {post.likes || 0} Likes
+        <div className="prose max-w-none prose-p:text-foreground prose-headings:text-primary text-foreground whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: post.content }} />
+        
+        <Separator className="my-4" />
+
+        <div className="flex items-center justify-start gap-1 sm:gap-2">
+          <Button variant="ghost" size="sm" onClick={handlePostLike} className={cn("text-muted-foreground hover:text-primary hover:bg-accent", isPostLikedByCurrentUser && "text-red-500 hover:text-red-600")}>
+            <Heart className={cn("h-5 w-5 mr-1.5", isPostLikedByCurrentUser ? "fill-current text-red-500" : "fill-none", showPostLikeAnimation && "animate-heartBeat")} />
+            {post.likes || 0} Likes
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary hover:bg-accent">
+                <Share2 className="h-5 w-5 mr-1.5" /> Share
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="">
-                    <Share2 className="h-5 w-5 mr-1.5" /> Share ({post.shares || 0})
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => handleShare('copyLink')}><LinkIcon className="mr-2 h-4 w-4" /> Copy Link</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShare('email')}><Mail className="mr-2 h-4 w-4" /> Email</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShare('twitter')}><TwitterIcon /> <span className="ml-2">Twitter</span></DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShare('facebook')}><FacebookIcon /> <span className="ml-2">Facebook</span></DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShare('whatsapp')}><WhatsAppIcon /> <span className="ml-2">WhatsApp</span></DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => handleShare('copyLink')}><LinkIcon className="mr-2 h-4 w-4" /> Copy Link</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('email')}><Mail className="mr-2 h-4 w-4" /> Email</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('twitter')}><TwitterIcon /> <span className="ml-2">Twitter</span></DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('facebook')}><FacebookIcon /> <span className="ml-2">Facebook</span></DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShare('whatsapp')}><WhatsAppIcon /> <span className="ml-2">WhatsApp</span></DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <section id="comments-section" className="scroll-mt-24 pt-4">
+          <h2 className="text-xl font-semibold text-primary mb-4">Comments ({topLevelComments.length})</h2>
+          {user && (
+            <div className="mb-6">
+              <Textarea placeholder="Add a public comment..." value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)} className="min-h-[80px] mb-2 bg-background" disabled={isSubmittingComment}/>
+              <Button onClick={() => handleAddCommentOrReply(newCommentText)} disabled={isSubmittingComment || !newCommentText.trim()}>
+                {isSubmittingComment && !replyToCommentId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                Comment
+              </Button>
             </div>
+          )}
+          {!user && <p className="text-muted-foreground mb-4">Please <Link href="/signup" className="text-primary hover:underline">login or sign up</Link> to comment.</p>}
 
-            <section id="comments-section" className="scroll-mt-24">
-              <h2 className="text-2xl font-semibold text-primary mb-4">Comments ({topLevelComments.length})</h2>
-              {user && (
-                <div className="mb-6">
-                  <Textarea placeholder="Add a public comment..." value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)} className="min-h-[80px] mb-2" disabled={isSubmittingComment}/>
-                  <Button onClick={() => handleAddCommentOrReply(newCommentText)} disabled={isSubmittingComment || !newCommentText.trim()}>
-                    {isSubmittingComment && !replyToCommentId ? <Loader2 className="mr-2 h-4 w-4 animate-spin " /> : <Send className="mr-2 h-4 w-4" />}
-                    Comment
-                  </Button>
-                </div>
-              )}
-              {!user && <p className="text-muted-foreground mb-4">Please <Link href="/signup" className="text-primary hover:underline">login or sign up</Link> to comment.</p>}
+          <div className="space-y-4">
+            {visibleTopLevelComments.length > 0 ? visibleTopLevelComments.map(comment => {
+              const replies = getRepliesForComment(comment.id);
+              const isCommentLikedByCurrentUser = user ? comment.likedBy?.includes(user.id) : false;
+              const visibleReplies = expandedRepliesMap[comment.id] ? replies.slice(0, visibleRepliesCountMap[comment.id] || REPLIES_INITIAL_LIMIT) : [];
 
-              <div className="space-y-4">
-                {visibleTopLevelComments.length > 0 ? visibleTopLevelComments.map(comment => {
-                  const replies = getRepliesForComment(comment.id);
-                  const isCommentLikedByCurrentUser = user ? comment.likedBy?.includes(user.id) : false;
-                  const visibleReplies = expandedRepliesMap[comment.id] ? replies.slice(0, visibleRepliesCountMap[comment.id] || REPLIES_INITIAL_LIMIT) : [];
+              return (
+                <div key={comment.id} className="py-2">
+                  <div className="flex items-start gap-3">
+                    <Link href={comment.author.id ? `/profile/${comment.author.id}` : '#'}>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={comment.author.imageUrl} alt={comment.author.name} className="object-cover"/>
+                        <AvatarFallback>{comment.author.name?.substring(0,1) || 'U'}</AvatarFallback>
+                      </Avatar>
+                    </Link>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Link href={comment.author.id ? `/profile/${comment.author.id}` : '#'}><span className="font-semibold text-sm text-card-foreground hover:text-primary">{comment.author.name}</span></Link>
+                        <span className="text-xs text-muted-foreground">• {new Date(comment.date).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{comment.text}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleCommentLike(comment.id)} className={cn("text-xs px-1 py-0.5 h-auto text-muted-foreground hover:text-primary", isCommentLikedByCurrentUser && "text-red-500")}>
+                          <Heart className={cn("h-3.5 w-3.5 mr-1", isCommentLikedByCurrentUser && "fill-current")}/> {comment.likes || 0}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setReplyToCommentId(replyToCommentId === comment.id ? null : comment.id)} className="text-xs px-1 py-0.5 h-auto text-muted-foreground hover:text-primary">
+                          Reply
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
 
-                  return (
-                  <div key={comment.id} className="py-2">
-                    <Card className="bg-muted/30">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <Link href={comment.author.id ? `/profile/${comment.author.id}` : '#'}>
-                            <Avatar className="h-9 w-9">
-                              <AvatarImage src={comment.author.imageUrl} alt={comment.author.name} className="object-cover"/>
-                              <AvatarFallback>{comment.author.name?.substring(0,1) || 'U'}</AvatarFallback>
-                            </Avatar>
-                          </Link>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <Link href={comment.author.id ? `/profile/${comment.author.id}` : '#'}><span className="font-semibold text-sm text-card-foreground hover:text-primary">{comment.author.name}</span></Link>
-                              <span className="text-xs text-muted-foreground">{new Date(comment.date).toLocaleDateString()}</span>
-                            </div>
-                            <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{comment.text}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleCommentLike(comment.id)} className={cn("text-xs px-1 py-0.5 h-auto bg-white hover:text-red-700 ", isCommentLikedByCurrentUser && "text-red-500")}>
-                                <Heart className={cn("h-3.5 w-3.5 mr-1", isCommentLikedByCurrentUser && "fill-current")}/> {comment.likes || 0}
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => setReplyToCommentId(replyToCommentId === comment.id ? null : comment.id)} className="text-xs px-1 py-0.5 h-auto bg-white">
-                                Reply
-                              </Button>
+                  {replyToCommentId === comment.id && (
+                    <div className="ml-12 mt-2 p-3 bg-background border rounded-md shadow-sm">
+                      <Textarea placeholder={`Replying to ${comment.author.name}...`} value={replyText} onChange={(e) => setReplyText(e.target.value)} className="min-h-[60px] mb-2 text-sm" disabled={isSubmittingComment}/>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => {setReplyToCommentId(null); setReplyText('');}} disabled={isSubmittingComment}>Cancel</Button>
+                        <Button size="sm" onClick={() => handleAddCommentOrReply(replyText, comment.id)} disabled={isSubmittingComment || !replyText.trim()}>
+                          {isSubmittingComment && replyToCommentId === comment.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                          Reply
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {replies.length > 0 && (
+                    <div className="ml-10 mt-2 pl-2 border-l-2 border-border">
+                      <Button variant="link" size="sm" onClick={() => toggleRepliesVisibility(comment.id)} className="px-0 py-1 text-xs text-muted-foreground hover:text-primary">
+                        {expandedRepliesMap[comment.id] ? <EyeOff className="mr-1 h-3.5 w-3.5"/> : <Eye className="mr-1 h-3.5 w-3.5"/>}
+                        {expandedRepliesMap[comment.id] ? 'Hide' : `View ${replies.length}`} replies
+                      </Button>
+                      {expandedRepliesMap[comment.id] && visibleReplies.map(reply => {
+                        const isReplyLiked = user ? reply.likedBy?.includes(user.id) : false;
+                        return (
+                          <div key={reply.id} className="flex items-start gap-2.5 my-2">
+                            <CornerDownRight className="h-4 w-4 text-muted-foreground mt-1.5 shrink-0"/>
+                            <Link href={reply.author.id ? `/profile/${reply.author.id}` : '#'}>
+                              <Avatar className="h-7 w-7">
+                                <AvatarImage src={reply.author.imageUrl} alt={reply.author.name} className="object-cover"/>
+                                <AvatarFallback className="text-xs">{reply.author.name?.substring(0,1) || 'U'}</AvatarFallback>
+                              </Avatar>
+                            </Link>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <Link href={reply.author.id ? `/profile/${reply.author.id}` : '#'}><span className="font-semibold text-xs text-card-foreground hover:text-primary">{reply.author.name}</span></Link>
+                                <span className="text-xs text-muted-foreground">• {new Date(reply.date).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-xs text-foreground mt-0.5 whitespace-pre-wrap">{reply.text}</p>
+                              <div className="flex items-center gap-1.5 mt-1.5">
+                                <Button variant="ghost" size="sm" onClick={() => handleCommentLike(reply.id)} className={cn("text-xs px-1 py-0.5 h-auto text-muted-foreground hover:text-primary", isReplyLiked && "text-red-500")}>
+                                  <Heart className={cn("h-3 w-3 mr-0.5", isReplyLiked && "fill-current")}/> {reply.likes || 0}
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Reply Input Form */}
-                    {replyToCommentId === comment.id && (
-                      <div className="ml-12 mt-2 p-3 bg-background border rounded-md shadow-sm">
-                        <Textarea placeholder={`Replying to ${comment.author.name}...`} value={replyText} onChange={(e) => setReplyText(e.target.value)} className="min-h-[60px] mb-2 text-sm" disabled={isSubmittingComment}/>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => {setReplyToCommentId(null); setReplyText('');}} disabled={isSubmittingComment}>Cancel</Button>
-                          <Button size="sm" onClick={() => handleAddCommentOrReply(replyText, comment.id)} disabled={isSubmittingComment || !replyText.trim()}>
-                            {isSubmittingComment && replyToCommentId === comment.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                            Reply
+                        );
+                      })}
+                      {expandedRepliesMap[comment.id] && replies.length > visibleReplies.length && (
+                          <Button variant="link" size="sm" onClick={() => loadMoreReplies(comment.id)} className="px-0 py-1 text-xs text-muted-foreground hover:text-primary">
+                              View more replies
                           </Button>
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}) : (
+                <p className="text-muted-foreground text-center py-6">No comments yet. Be the first to comment!</p>
+              )}
+              {topLevelComments.length > visibleCommentsCount && (
+                 <Button variant="link" onClick={() => setVisibleCommentsCount(topLevelComments.length)} className="w-full justify-start px-0 text-sm text-muted-foreground hover:text-primary">
+                      View all {topLevelComments.length} comments
+                  </Button>
+              )}
+          </div>
+          </section>
+        </div>
+    </article>
+  );
+}
 
-                    {/* Replies Section */}
-                    {replies.length > 0 && (
-                      <div className="ml-10 mt-2 pl-2 border-l-2 border-border">
-                        <Button variant="link" size="sm" onClick={() => toggleRepliesVisibility(comment.id)} className="px-0 py-1 text-xs text-muted-foreground hover:text-primary">
-                          {expandedRepliesMap[comment.id] ? <EyeOff className="mr-1 h-3.5 w-3.5"/> : <Eye className="mr-1 h-3.5 w-3.5"/>}
-                          {expandedRepliesMap[comment.id] ? 'Hide' : `View ${replies.length}`} replies
-                        </Button>
-                        {expandedRepliesMap[comment.id] && visibleReplies.map(reply => {
-                          const isReplyLiked = user ? reply.likedBy?.includes(user.id) : false;
-                          return (
-                            <Card key={reply.id} className="bg-background my-2 shadow-sm">
-                              <CardContent className="p-3">
-                                <div className="flex items-start gap-2.5">
-                                   <CornerDownRight className="h-4 w-4 text-muted-foreground mt-1.5 shrink-0"/>
-                                  <Link href={reply.author.id ? `/profile/${reply.author.id}` : '#'}>
-                                    <Avatar className="h-7 w-7">
-                                      <AvatarImage src={reply.author.imageUrl} alt={reply.author.name} className="object-cover"/>
-                                      <AvatarFallback className="text-xs">{reply.author.name?.substring(0,1) || 'U'}</AvatarFallback>
-                                    </Avatar>
-                                  </Link>
-                                  <div className="flex-1">
-                                    <div className="flex items-center justify-between">
-                                      <Link href={reply.author.id ? `/profile/${reply.author.id}` : '#'}><span className="font-semibold text-xs text-card-foreground">{reply.author.name}</span></Link>
-                                      <span className="text-xs text-muted-foreground">{new Date(reply.date).toLocaleDateString()}</span>
-                                    </div>
-                                    <p className="text-xs text-foreground mt-0.5 whitespace-pre-wrap">{reply.text}</p>
-                                     <div className="flex items-center gap-1.5 mt-1.5">
-                                      <Button variant="ghost" size="sm" onClick={() => handleCommentLike(reply.id)} className={cn("text-xs px-1 py-0.5 h-auto", isReplyLiked && "text-red-500")}>
-                                        <Heart className={cn("h-3 w-3 mr-0.5", isReplyLiked && "fill-current")}/> {reply.likes || 0}
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                        {expandedRepliesMap[comment.id] && replies.length > visibleReplies.length && (
-                            <Button variant="link" size="sm" onClick={() => loadMoreReplies(comment.id)} className="px-0 py-1 text-xs text-muted-foreground hover:text-primary">
-                                View more replies
-                            </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}) : (
-                  <p className="text-muted-foreground text-center py-6">No comments yet. Be the first to comment!</p>
-                )}
-                {topLevelComments.length > visibleCommentsCount && (
-                   <Button variant="link" onClick={() => setVisibleCommentsCount(topLevelComments.length)} className="w-full justify-start px-0 text-sm text-muted-foreground hover:text-primary">
-                        View all {topLevelComments.length} comments
-                    </Button>
-                )}
+
+export default function PostPage() {
+  const [dynamicCategories, setDynamicCategories] = useState<Array<{ category: string, count: number }>>([]);
+  const [topAuthors, setTopAuthors] = useState<TopAuthor[]>([]);
+  const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
+  
+  const popularCategoriesData = useMemo(() => {
+    return staticCategories.map(sc => {
+      const dynamicCat = dynamicCategories.find(dc => dc.category === sc.slug);
+      return {
+        ...sc,
+        postCount: dynamicCat ? dynamicCat.count : 0,
+      };
+    }).sort((a,b) => b.postCount - a.postCount);
+  }, [dynamicCategories]);
+  
+  useEffect(() => {
+    async function fetchSidebarData() {
+       try {
+        const [catCounts, authors, trending] = await Promise.all([
+          getCategoriesWithCounts(),
+          getTopAuthors(5),
+          getPosts(1, 5) // For trending sidebar
+        ]);
+        setDynamicCategories(catCounts);
+        setTopAuthors(authors);
+        setTrendingPosts(trending.posts);
+      } catch (error) {
+        console.error("Failed to fetch sidebar data:", error);
+      }
+    }
+    fetchSidebarData();
+  }, []);
+
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+      <AppHeader popularCategoriesData={popularCategoriesData} />
+      <main className="flex-grow container mx-auto px-4 py-8 pt-20 md:pt-8">
+        <div className="grid grid-cols-12 gap-8">
+            <aside className="hidden lg:block col-span-3">
+               <div className="sticky top-20 space-y-6 h-[calc(100vh-6rem)] overflow-y-auto pr-4 border-r">
+                  <PopularCategories categories={popularCategoriesData} />
+                  <Separator />
+                  <ResourcesSidebar />
               </div>
-            </section>
-          </article>
+            </aside>
 
-          <aside className="w-full lg:w-1/3 lg:sticky lg:top-[calc(theme(spacing.4)_+_65px_+_env(safe-area-inset-top))] h-fit">
-            <TrendingSidebar trendingPosts={trendingPosts} />
-          </aside>
+            <section className="col-span-12 lg:col-span-6 flex flex-col gap-4">
+               <PostContent />
+            </section>
+
+            <aside className="hidden lg:block col-span-3">
+               <div className="sticky top-20 space-y-6 h-[calc(100vh-6rem)] overflow-y-auto pl-4">
+                  <TrendingSidebar trendingPosts={trendingPosts} />
+                  <Separator />
+                  <TopAuthorsSidebar authors={topAuthors} />
+               </div>
+            </aside>
         </div>
       </main>
     </div>
   );
 }
-
