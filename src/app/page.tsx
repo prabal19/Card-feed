@@ -12,11 +12,12 @@ import { TopAuthorsSidebar } from '@/components/blog/top-authors-sidebar';
 import { ResourcesSidebar } from '@/components/blog/resources-sidebar';
 import { Button } from '@/components/ui/button';
 import { categories as staticCategories } from '@/lib/data';
-import type { Post, Category, TopAuthor } from '@/types';
+import type { Post, TopAuthor } from '@/types';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { getPosts, getCategoriesWithCounts } from '@/app/actions/post.actions';
 import { getTopAuthors } from '@/app/actions/user.actions';
 import { Separator } from '@/components/ui/separator';
+import { AppFooter } from '@/components/layout/footer';
 
 const POSTS_PER_PAGE = 8;
 
@@ -104,31 +105,25 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeaderComponent popularCategoriesData={popularCategoriesData} />
-      <main className="flex-grow container mx-auto px-4 py-8 pt-20 md:pt-8">
-        <div className="grid grid-cols-12 gap-8 relative">
-          
+      <main className="flex-grow container mx-auto px-4 py-8 pt-12 md:pt-8">
+        <div className="flex justify-center gap-8">
           {/* Left Sidebar */}
-          <aside className="hidden lg:block lg:col-span-3">
-             <div className="sticky top-20"> {/* Header height approx 5rem = 80px */}
-                <div className="space-y-6 h-[calc(100vh-6rem)] overflow-y-auto pr-4">
-                    <Link href="/create-post" passHref>
-                        <Button className="w-full">
-                            <PlusCircle className="mr-2 h-5 w-5" /> Create Post
-                        </Button>
-                    </Link>
-                    <Separator />
-                    <PopularCategories categories={popularCategoriesData} />
-                    <Separator />
-                    <ResourcesSidebar />
-                </div>
+          <aside className="hidden lg:block w-[270px] shrink-0">
+            <div className="sticky p-4 top-20 space-y-6 h-[calc(100vh-6rem)] overflow-y-auto">
+              <Link href="/create-post" passHref>
+                <Button className="w-full">
+                  <PlusCircle className="mr-2 h-5 w-5" /> Create Post
+                </Button>
+              </Link>
+              <Separator />
+              <PopularCategories categories={popularCategoriesData} />
+              <Separator />
+                <ResourcesSidebar />
             </div>
           </aside>
 
-          {/* Separator */}
-          <div className="hidden lg:block absolute top-0 bottom-0 left-[24%] w-px bg-border"></div>
-
           {/* Main Content */}
-          <section className="col-span-12 lg:col-span-6 flex flex-col gap-4">
+          <section className="p-4 flex-grow max-w-2xl flex flex-col gap-4">
             {posts.length > 0 ? (
               posts.map((post: Post) => (
                 <BlogCard key={post.id} post={post} />
@@ -160,16 +155,13 @@ export default function HomePage() {
               </Button>
             )}
           </section>
-
-
+          
           {/* Right Sidebar */}
-          <aside className="hidden lg:block lg:col-span-3">
-             <div className="sticky top-20"> {/* Header height approx 5rem = 80px */}
-                <div className="space-y-6 h-[calc(100vh-6rem)] overflow-y-auto pl-4 overflow-x-hidden">
-                    <TrendingSidebar trendingPosts={trendingPosts} />
-                    <Separator />
-                    <TopAuthorsSidebar authors={topAuthors} />
-                </div>
+          <aside className="hidden lg:block w-[310px] shrink-0">
+             <div className="sticky p-4 top-20 space-y-6 h-[calc(100vh-6rem)] overflow-y-auto">
+                <TrendingSidebar trendingPosts={trendingPosts} />
+                <Separator />
+                <TopAuthorsSidebar authors={topAuthors} />
              </div>
           </aside>
         </div>

@@ -2,13 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Newspaper } from 'lucide-react';
 
 export function AppFooter() {
   const pathname = usePathname();
 
-  // Do not render the footer on the homepage
-  if (pathname === '/') {
+  // Do not render the footer on the homepage or post pages
+  if (pathname === '/' || pathname.startsWith('/posts/')) {
     return null;
   }
 

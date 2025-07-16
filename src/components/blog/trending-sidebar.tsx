@@ -1,4 +1,3 @@
-
 // src/components/blog/trending-sidebar.tsx
 'use client';
 
@@ -7,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { generateSlug } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Separator } from '../ui/separator';
 
 interface TrendingSidebarProps {
   trendingPosts: Post[]; 
@@ -22,25 +22,25 @@ export function TrendingSidebar({ trendingPosts }: TrendingSidebarProps) {
       </h3>
       <div>
         {topTrending.length > 0 ? (
-          <ul className="space-y-2">
-            {topTrending.map((post) => (
+          <ul className="space-y-3">
+            {topTrending.map((post, index) => (
               <li key={post.id}>
                 <Link 
                   href={`/posts/${post.id}/${generateSlug(post.title)}`}
-                  className="flex items-start gap-4 p-2 -m-2 rounded-md hover:bg-accent transition-colors hover:bg-white"
+                  className="flex items-start gap-3 p-2 -m-2 rounded-md hover:bg-accent transition-colors"
                 >
-                  <div className="flex-grow space-y-1">
+                  <div className="flex-grow space-y-1 overflow-hidden">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Avatar className="h-5 w-5">
                         <AvatarImage src={post.author.imageUrl} alt={post.author.name} className="object-cover"/>
                         <AvatarFallback>{post.author.name?.substring(0, 1) || 'A'}</AvatarFallback>
                       </Avatar>
-                      <span className="font-semibold text-foreground hover:underline">{post.author.name}</span>
+                      <span className="font-semibold text-foreground hover:underline truncate">{post.author.name}</span>
                       <span>•</span>
                       <span>{new Date(post.date).toLocaleDateString()}</span>
                     </div>
 
-                    <h4 className="text-base font-medium text-foreground hover:text-primary transition-colors line-clamp-3">
+                    <h4 className="text-base font-medium text-foreground hover:text-primary transition-colors line-clamp-2">
                       {post.title}
                     </h4>
                     
@@ -52,7 +52,7 @@ export function TrendingSidebar({ trendingPosts }: TrendingSidebarProps) {
                   </div>
 
                   {post.imageUrl && (
-                    <div className="relative w-24 h-16 bg-muted overflow-hidden shrink-0 rounded-md">
+                    <div className="relative w-20 h-14 bg-muted overflow-hidden shrink-0 rounded-md">
                       <Image 
                         src={post.imageUrl} 
                         alt={post.title} 
@@ -63,6 +63,7 @@ export function TrendingSidebar({ trendingPosts }: TrendingSidebarProps) {
                     </div>
                   )}
                 </Link>
+                {index < topTrending.length - 1 && <Separator className="mt-3" />}
               </li>
             ))}
           </ul>
