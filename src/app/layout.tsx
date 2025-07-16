@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AppFooter } from '@/components/layout/footer';
 import { AuthProvider } from '@/contexts/auth-context'; // Added AuthProvider
 import { PageLoader } from '@/components/layout/page-loader';
+import { Suspense } from 'react';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -52,7 +53,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
         <AuthProvider> 
-          <PageLoader />
+          <Suspense fallback={null}>
+            <PageLoader />
+          </Suspense>
           <div className="flex-grow">
             {children}
           </div>
