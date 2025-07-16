@@ -11,12 +11,13 @@ import { getTopAuthors } from '@/app/actions/user.actions';
 import { PostContent } from '@/components/post/post-content';
 import { categories as staticCategories } from '@/lib/data';
 
-type Props = {
-  params: { postId: string; slug: string; }
-}
+type PageParams = {
+  postId: string;
+  slug: string;
+};
 
 export async function generateMetadata(
-  { params }: Props,
+  { params }: { params: PageParams },
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   const postId = params.postId
@@ -51,7 +52,7 @@ export async function generateMetadata(
   }
 }
 
-export default async function PostPage({ params }: Props) {
+export default async function PostPage({ params }: { params: PageParams }) {
   // Fetch all data for the page on the server
   const [initialPost, catCounts, topAuthors, trendingPostsResult] = await Promise.all([
     getPostById(params.postId),
