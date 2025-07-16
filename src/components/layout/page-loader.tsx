@@ -48,12 +48,13 @@ export function PageLoader() {
     const mutationObserver = new MutationObserver(handleMutation);
     mutationObserver.observe(document, { childList: true, subtree: true });
 
-    window.history.pushState = new Proxy(window.history.pushState, {
-        apply: (target, thisArg, argArray) => {
+        window.history.pushState = new Proxy(window.history.pushState, {
+          apply: (target, thisArg, argArray: [any, string, string?]) => {
             NProgress.done();
             return target.apply(thisArg, argArray);
-        },
-    });
+          },
+        });
+
 
   });
 

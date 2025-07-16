@@ -12,8 +12,11 @@ import { PostContent } from '@/components/post/post-content';
 import { categories as staticCategories } from '@/lib/data';
 
 type PageProps = {
-  params: { postId: string; slug: string };
-  searchParams?: { [key: string]: string | string[] | undefined };
+  params: {
+    postId: string;
+    slug: string;
+  };
+  searchParams?: { [key: string]: string | string[] };
 };
 
 export async function generateMetadata(
