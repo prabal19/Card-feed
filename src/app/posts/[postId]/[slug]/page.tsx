@@ -12,7 +12,7 @@ import { PostContent } from '@/components/post/post-content';
 import { categories as staticCategories } from '@/lib/data';
 
 type Props = {
-  params: { postId: string }
+  params: { postId: string; slug: string; }
 }
 
 export async function generateMetadata(
