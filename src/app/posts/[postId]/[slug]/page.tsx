@@ -314,6 +314,8 @@ export default function PostPage() {
           <aside className="hidden lg:block w-[271px] shrink-0">
             <div className="sticky top-20 space-y-6 h-[calc(100vh-6rem)] overflow-y-auto">
               <PopularCategories categories={popularCategoriesData} />
+              <Separator />
+              <ResourcesSidebar />
             </div>
           </aside>
 
@@ -504,8 +506,7 @@ export default function PostPage() {
               <TrendingSidebar trendingPosts={trendingPosts} />
               <Separator />
               <TopAuthorsSidebar authors={topAuthors} />
-              <Separator />
-              <ResourcesSidebar />
+
             </div>
           </aside>
         </div>
