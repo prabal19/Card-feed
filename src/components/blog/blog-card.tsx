@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn, generateSlug } from '@/lib/utils';
+import { cn, generateSlug, formatDateAgo, formatNumber } from '@/lib/utils';
 
 // Mock social icons for dropdown
 const TwitterIcon = () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733a4.67 4.67 0 0 0 2.048-2.578 9.3 9.3 0 0 1-2.958 1.13 4.66 4.66 0 0 0-7.938 4.25 13.229 13.229 0 0 1-9.602-4.868c-.4.69-.63 1.49-.63 2.342A4.66 4.66 0 0 0 3.96 9.824a4.647 4.647 0 0 1-2.11-.583v.06a4.66 4.66 0 0 0 3.733 4.568 4.69 4.69 0 0 1-2.104.08 4.661 4.661 0 0 0 4.35 3.234 9.348 9.348 0 0 1-5.786 1.995 9.5 9.5 0 0 1-1.112-.065 13.175 13.175 0 0 0 7.14 2.093c8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602a9.49 9.49 0 0 0 2.323-2.41z"/></svg>;
@@ -186,7 +186,7 @@ export function BlogCard({ post: initialPost, showEditButton = false }: BlogCard
           {postData.author.name}
         </Link>
         <span>•</span>
-        <span>{new Date(postData.date).toLocaleDateString()}</span>
+        <span>{formatDateAgo(postData.date)}</span>
       </div>
 
       <Link href={postLinkPath} className="block space-y-2">
@@ -210,57 +210,62 @@ export function BlogCard({ post: initialPost, showEditButton = false }: BlogCard
         </p>
       </Link>
 
-      <div className="flex items-center gap-1 mt-3">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={handleLike}
-          className={cn(
-            "flex items-center text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700",
-            isLiked && "text-red-500"
-          )}
-        >
-          <Heart className={cn("h-5 w-5 mr-1", isLiked && "fill-red-400 ", showHeartAnimation && "animate-heartBeat")} />
-          {postData.likes || 0}
-        </Button>
-        <Button 
-          asChild
-          variant="ghost" 
-          size="sm" 
-          className="text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700"
-        >
-          <Link href={commentsLinkPath}>
-            <MessageCircle className="h-5 w-5 mr-1" />
-            {postData.comments?.length || 0}
-          </Link>
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+      <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center gap-1 bg-secondary p-1 rounded-full">
             <Button 
-              variant="ghost" 
-              size="sm"
-              className="text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700"
+            variant="ghost" 
+            size="sm" 
+            onClick={handleLike}
+            className={cn(
+                "flex items-center text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full",
+                isLiked && "text-red-500 hover:text-red-500"
+            )}
             >
-              <Share2 className="h-5 w-5 mr-1" />
-              Share
+            <Heart className={cn("h-5 w-5 mr-1", isLiked && "fill-current", showHeartAnimation && "animate-heartBeat")} />
+            {formatNumber(postData.likes || 0)}
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-             <DropdownMenuItem onClick={() => handleShare('copyLink')}><LinkIcon className="mr-2 h-4 w-4" /> Copy Link</DropdownMenuItem>
-             <DropdownMenuItem onClick={() => handleShare('email')}><Mail className="mr-2 h-4 w-4" /> Email</DropdownMenuItem>
-             <DropdownMenuItem onClick={() => handleShare('twitter')}><TwitterIcon /> <span className="ml-2">Twitter</span></DropdownMenuItem>
-             <DropdownMenuItem onClick={() => handleShare('facebook')}><FacebookIcon /> <span className="ml-2">Facebook</span></DropdownMenuItem>
-             <DropdownMenuItem onClick={() => handleShare('whatsapp')}><WhatsAppIcon /> <span className="ml-2">WhatsApp</span></DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        {showEditButton && user && user.id === postData.author.id && (
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700">
-            <Link href={`/create-post?editPostId=${postData.id}`}>
-              <Edit className="mr-1.5 h-4 w-4" />
-              Edit
+            <Button 
+            asChild
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full"
+            >
+            <Link href={commentsLinkPath}>
+                <MessageCircle className="h-5 w-5 mr-1" />
+                 {formatNumber(postData.comments?.length || 0)}
             </Link>
-          </Button>
-        )}
+            </Button>
+        </div>
+        
+        <div className="flex items-center gap-1">
+            <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full"
+                >
+                <Share2 className="h-5 w-5 mr-1" />
+                Share
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleShare('copyLink')}><LinkIcon className="mr-2 h-4 w-4" /> Copy Link</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('email')}><Mail className="mr-2 h-4 w-4" /> Email</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('twitter')}><TwitterIcon /> <span className="ml-2">Twitter</span></DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('facebook')}><FacebookIcon /> <span className="ml-2">Facebook</span></DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('whatsapp')}><WhatsAppIcon /> <span className="ml-2">WhatsApp</span></DropdownMenuItem>
+            </DropdownMenuContent>
+            </DropdownMenu>
+            {showEditButton && user && user.id === postData.author.id && (
+            <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full">
+                <Link href={`/create-post?editPostId=${postData.id}`}>
+                <Edit className="mr-1.5 h-4 w-4" />
+                Edit
+                </Link>
+            </Button>
+            )}
+        </div>
       </div>
     </article>
   );

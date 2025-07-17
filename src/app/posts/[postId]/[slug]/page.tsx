@@ -19,7 +19,7 @@ import { getPostById, likePost, sharePost, addComment, likeComment, getCategorie
 import { getTopAuthors } from '@/app/actions/user.actions';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
-import { cn, generateSlug } from '@/lib/utils';
+import { cn, generateSlug, formatNumber } from '@/lib/utils';
 import { categories as staticCategories } from '@/lib/data';
 import {
   DropdownMenu,
@@ -328,7 +328,7 @@ export default function PostPage() {
                         Back
                     </Button>
                 </div>
-                <Card className="bg-secondary rounded-lg p-3 sm:p-4">
+                <Card className="bg-white rounded-lg p-3 sm:p-4">
                     <div className="space-y-4">
                     <header className="space-y-4">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -365,10 +365,11 @@ export default function PostPage() {
                         
                         <Separator className="my-4" />
 
-                        <div className="flex items-center justify-start gap-1 sm:gap-2">
+             <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center gap-1 bg-secondary p-1 rounded-full">
                         <Button variant="ghost" size="sm" onClick={handlePostLike} className={cn("text-muted-foreground hover:text-primary hover:bg-accent", isPostLikedByCurrentUser && "text-red-500 hover:text-red-600")}>
                             <Heart className={cn("h-5 w-5 mr-1.5", isPostLikedByCurrentUser ? "fill-current text-red-500" : "fill-none", showPostLikeAnimation && "animate-heartBeat")} />
-                            {post.likes || 0} Likes
+                            {formatNumber(post.likes || 0)} Likes
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -385,9 +386,10 @@ export default function PostPage() {
                             </DropdownMenuContent>
                         </DropdownMenu>
                         </div>
+                        </div>
 
                         <section id="comments-section" className="scroll-mt-24 pt-4">
-                        <h2 className="text-xl font-semibold text-primary mb-4">Comments ({topLevelComments.length})</h2>
+                        <h2 className="text-xl font-semibold text-primary mb-4">Comments ({formatNumber(topLevelComments.length)})</h2>
                         {user && (
                             <div className="mb-6">
                             <Textarea placeholder="Add a public comment..." value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)} className="min-h-[80px] mb-2 bg-background" disabled={isSubmittingComment}/>
@@ -422,7 +424,7 @@ export default function PostPage() {
                                     <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{comment.text}</p>
                                     <div className="flex items-center gap-2 mt-2">
                                         <Button variant="ghost" size="sm" onClick={() => handleCommentLike(comment.id)} className={cn("text-xs px-1 py-0.5 h-auto text-muted-foreground hover:text-primary", isCommentLikedByCurrentUser && "text-red-500")}>
-                                        <Heart className={cn("h-3.5 w-3.5 mr-1", isCommentLikedByCurrentUser && "fill-current")}/> {comment.likes || 0}
+                                        <Heart className={cn("h-3.5 w-3.5 mr-1", isCommentLikedByCurrentUser && "fill-current")}/> {formatNumber(comment.likes || 0)}
                                         </Button>
                                         <Button variant="ghost" size="sm" onClick={() => setReplyToCommentId(replyToCommentId === comment.id ? null : comment.id)} className="text-xs px-1 py-0.5 h-auto text-muted-foreground hover:text-primary">
                                         Reply
@@ -469,7 +471,7 @@ export default function PostPage() {
                                             <p className="text-xs text-foreground mt-0.5 whitespace-pre-wrap">{reply.text}</p>
                                             <div className="flex items-center gap-1.5 mt-1.5">
                                                 <Button variant="ghost" size="sm" onClick={() => handleCommentLike(reply.id)} className={cn("text-xs px-1 py-0.5 h-auto text-muted-foreground hover:text-primary", isReplyLiked && "text-red-500")}>
-                                                <Heart className={cn("h-3 w-3 mr-0.5", isReplyLiked && "fill-current")}/> {reply.likes || 0}
+                                                <Heart className={cn("h-3 w-3 mr-0.5", isReplyLiked && "fill-current")}/> {formatNumber(reply.likes || 0)}
                                                 </Button>
                                             </div>
                                             </div>
