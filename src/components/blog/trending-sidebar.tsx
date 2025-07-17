@@ -16,7 +16,7 @@ export function TrendingSidebar({ trendingPosts }: TrendingSidebarProps) {
   const topTrending = trendingPosts.slice(0, 5);
 
   return (
-    <div className="bg-secondary p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-[16px]">
       <h3 className="text-sm font-bold uppercase text-muted-foreground tracking-wider mb-4">
         Trending Now
       </h3>
